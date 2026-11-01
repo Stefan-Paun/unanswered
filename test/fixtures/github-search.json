@@ -1,0 +1,389 @@
+{
+ "total_count": 5968,
+ "incomplete_results": false,
+ "items": [
+  {
+   "url": "https://api.github.com/repos/SSFSKIM/cua/issues/260",
+   "repository_url": "https://api.github.com/repos/SSFSKIM/cua",
+   "html_url": "https://github.com/SSFSKIM/cua/issues/260",
+   "id": 6151093059,
+   "number": 260,
+   "title": "Linux engine: a failed clipboard read after a delivered paste can delete a Chrome textarea's selection",
+   "labels": [
+    {
+     "name": "bug"
+    },
+    {
+     "name": "status:ready-for-architect"
+    },
+    {
+     "name": "priority:P2"
+    }
+   ],
+   "state": "open",
+   "locked": false,
+   "milestone": null,
+   "comments": 0,
+   "created_at": "2026-11-01T19:28:08Z",
+   "updated_at": "2026-11-01T19:28:28Z",
+   "closed_at": null,
+   "author_association": "OWNER",
+   "active_lock_reason": null,
+   "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+   },
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+   },
+   "body": "## Problem & intent\n\nOn cua's own Linux engine (#171), `type_text` and `paste` into a Chrome textarea that holds a selection deliver the paste chord, then serve Chrome's CLIPBOARD request. If that read fails after the chord was delivered, Chromium treats the failure as empty text and Blink deletes the selection. cua then answers unconfirmed, which is honest, but the person's selected text is gone and the answer does not say so. The read can fail in three ways:\n- **Late request.** The request comes after the paste's cleanup has run. cua refuses it under the late-generation rule (`clipboard/owner.rs`).\n- **Timeout.** The read times out.\n- **Stalled INCR.** An INCR transfer stalls.\n\nThe mechanism was read from cua's code and from upstream sources. It was not probed live:\n- **Chromium.** `ClipboardOzone::ReadText` maps a failed read to `''`.\n- **Blink.** `ReplaceSelectionCommand` deletes the selection for an empty fragment.\n- **cua.** cua itself never deletes text: there is no DeleteText or CutText anywhere in the engine, and every pre-dispatch refusal sends nothing.\n- **The other targets are safe on a failed read:**\n  - GTK 3: `clipboard_text_received` deletes only on non-NULL text.\n  - GTK 4: `paste_clipboard_finish` needs a successful read.\n  - Gecko: `InsertTextFromTransferable` needs non-empty text.\n  - Chrome's address bar: `OnOmniboxPasteComplete` rejects empty text.\n  - VTE: has no editable selection.\n\nNever observed. Every Chrome paste in the M3 gate was confirmed, and M2's failure trials had no selection.\n\nIntent: a cua paste must never cost the person their selected text. Where cua cannot prevent that, its answer must say the selection may be gone.\n\nSeams: the Linux engine's paste and clipboard owner (`clipboard/owner.rs`, the late-generation rule), and the answer text of `type_text` and `paste`.\n\n## Constraints\n\n- Preserve M2's cross-delivery rule: a late requestor is not served cua's text unless the design shows it is the paste's own requestor and no other paste can be.\n- Preserve the stage answers. Diagnostics stay value-free and never record the person's text or clipboard.\n- Live proof runs on the Linux VM's harness scenes, never on the person's apps.\n- Spawned by #171 (M3 branch review question). Parent N/A; blocked-by N/A.\n\n## Success criteria\n\n1. **A probe, first.** A Chrome textarea with a selection. The paste chord delivered. Chrome's conversion refused, or its INCR stalled, without an owner change. Then, after Chromium's read timeout, read back the text and the selection. Result: whether the selection is deleted.\n2. **If it is:**\n   - (a) The unconfirmed answer states that the selection may have been deleted, whenever cua knows the read failed after delivery (a refused late conversion, a timeout, a stalled INCR).\n   - (b) A design that prevents the loss, weighed against the cross-delivery rule. Candidates: serve the paste's own late requestor, identified by its window and the request's timing. Or hold the selection's restore text and re-insert it on a known failure. Each comes with its cost.\n3. **If it is not:** a Decision Log line that closes this ticket with the probe's evidence.\n4. **The same probe against the vendor's Linux build in Chrome,** recorded as a finding.\n\n## Open questions\n\nCan the paste's own late requestor be told apart from a later paste reliably enough to serve it?\n\n## Decision log\n\n- 2026-11-01: registered during #171 M3's gate rerun, from linux171's answer to the design session. Kept out of M3: it needs a failed read after delivery, the answer is already unconfirmed, and a fix changes M2's paste design. The owner's rule: every declared gap gets a ticket.\n\n## Sources\n\n- linux171's report to the design session, 2026-11-01 (sminos chat MAWS 3c5ca588:124).\n- Related: #256, the macOS counterpart: a late read after the restore pastes the person's previous clipboard.\n\n<!-- board:meta\nspawned-by: #171\nrelates-to: #256\n-->\n",
+   "state_reason": null,
+   "score": 1.0
+  },
+  {
+   "url": "https://api.github.com/repos/Fei2411/DS-Bot/issues/813",
+   "repository_url": "https://api.github.com/repos/Fei2411/DS-Bot",
+   "html_url": "https://github.com/Fei2411/DS-Bot/issues/813",
+   "id": 6151024380,
+   "number": 813,
+   "title": "切换「Bot 模式」与「经典 Agent 模式」后侧边栏消失，必须重启 DSH 才能恢复（ds-bot 0.2.5）",
+   "labels": [
+    {
+     "name": "bug"
+    }
+   ],
+   "state": "open",
+   "locked": false,
+   "milestone": null,
+   "comments": 0,
+   "created_at": "2026-11-01T19:20:56Z",
+   "updated_at": "2026-11-01T19:20:56Z",
+   "closed_at": null,
+   "author_association": "NONE",
+   "active_lock_reason": null,
+   "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+   },
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+   },
+   "body": "### What happened? / 发生了什么？\n\n我做了什么：在 DS Bot 里用菜单的「切换到经典 Agent 模式」切到经典模式，然后再切回 Bot 模式。\n期望：侧边栏一直在，切回来能看到 Bot 列表。\n实际：切换之后左侧整块侧边栏消失，只剩空白。而且不只是「收起了」——两种模式下都看不到侧栏，也拉不回来，只有重启 DSH 桌面端才恢复。\n频率：每次切都这样，稳定复现。\n\n环境：ds-bot 0.2.5（npm 当前 latest，11-01 发布、11-02 装上），DSH 桌面版 0.2.1-rc.2，Windows 11 x64。\n\n补充：\n1. 重启就好，不像持久配置被写坏；localStorage 里的 ds-bot:sidebar 看上去没变。\n2. 没有别的插件画左侧栏，同时只装了 @lemoncat7/dsh-ssh、@angelky7/dsh-browser-control 和这个。\n\n和 #808 的关系：#808 说的是「在 bot 模式里点按钮回不到经典 agent 模式」（侧栏还在）。我这条症状不同——切换之后侧栏整个消失，两种模式下都没有，必须重启才回来。可能是同一处切换逻辑的两种表现。\n\n一点猜测（不确定）：client.js 里 surfaceGroups.reconcile 在切 surface 时会 withdraw 掉 shell 组，TeamSidebar 的 LeftColumn 就在那组里；如果 withdraw 之后没重新 mount，侧栏那棵树就没了，重启重走一遍挂载才回来。\n\n### Screenshot (strongly recommended) / 截图（强烈建议）\n\n暂时没有截图：侧栏消失时左边整块是空白，截出来只有一片空。下次复现时补一张整窗截图。\n\n### Steps to reproduce / 复现步骤\n\n1. 打开 DSH 桌面端，进入 Bot 模式（左侧显示 Bot 列表）\n2. 打开切换模式的菜单，点「切换到经典 Agent 模式」\n3. 再切回 Bot 模式\n4. 观察：左侧侧栏区域变成空白，Bot 列表不见了\n5. 重启 DSH 桌面端 → 侧栏恢复\n\n注意：第 3 步切回来也不会恢复，说明不是「经典模式本来就没有侧栏」。\n\n### Diagnostics / 诊断信息\n\n- DS Bot：0.2.5（npm latest）\n- DSH 桌面版：0.2.1-rc.2（win32 / x64）\n- Node：24.21.0，pnpm 11.28.5\n- 屏幕：2240x1400，应用窗口 1941x1242\n- 插件路径：C:\\Users\\user\\.dsh\\profiles\\desktop\\node_modules\\ds-bot\n- 其它客户端插件：@lemoncat7/dsh-ssh、@angelky7/dsh-browser-control\n- 报错：界面上没有任何报错提示；这次没抓到渲染进程 console，如果需要我可以复现时再抓一份带报错的日志\n\n（截图暂时没有，侧栏消失时整块是空白，看不出东西；下次复现时我再补一张整窗截图。）\n\n### Privacy / 隐私\n\n- [x] This report has no API keys, tokens or personal data. / 报告里没有 API key、token 或个人信息。",
+   "state_reason": null,
+   "score": 1.0
+  },
+  {
+   "url": "https://api.github.com/repos/philffm/ai-summary-helper/issues/136",
+   "repository_url": "https://api.github.com/repos/philffm/ai-summary-helper",
+   "html_url": "https://github.com/philffm/ai-summary-helper/issues/136",
+   "id": 6151013101,
+   "number": 136,
+   "title": "https://ai-summary-helper.byphil.eu/de/education/ (doesnt exist or should be redirected to https://ai-summary-helper.byphil.eu/de/bildung/)",
+   "labels": [
+    {
+     "name": "bug"
+    }
+   ],
+   "state": "open",
+   "locked": false,
+   "milestone": null,
+   "comments": 0,
+   "created_at": "2026-11-01T19:19:44Z",
+   "updated_at": "2026-11-01T19:19:51Z",
+   "closed_at": null,
+   "author_association": "OWNER",
+   "active_lock_reason": null,
+   "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+   },
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+   },
+   "body": "### What happened?\n\nhttps://ai-summary-helper.byphil.eu/de/\nnav \"Bildung\" leads to https://ai-summary-helper.byphil.eu/education/\nbut since it is /de/ it should naturally go to https://ai-summary-helper.byphil.eu/de/education/\n\nwhich doesnt exist because the german counterpart content of https://ai-summary-helper.byphil.eu/education/\nis https://ai-summary-helper.byphil.eu/de/bildung/\n\nhttps://ai-summary-helper.byphil.eu/education/\n\nhttps://ai-summary-helper.byphil.eu/de/education/ (doesnt exist or should be redirected to https://ai-summary-helper.byphil.eu/de/bildung/)\n\nhttps://ai-summary-helper.byphil.eu/de/bildung/\n\n### Browser and platform\n\nChrome\n\n### Extension version\n\n_No response_\n\n### Model source\n\nNone\n\n### Page address, error text, console output\n\n_No response_",
+   "state_reason": null,
+   "score": 1.0
+  },
+  {
+   "url": "https://api.github.com/repos/solwation/lunden-3d-apartment/issues/1784",
+   "repository_url": "https://api.github.com/repos/solwation/lunden-3d-apartment",
+   "html_url": "https://github.com/solwation/lunden-3d-apartment/issues/1784",
+   "id": 6150997064,
+   "number": 1784,
+   "title": "Bugg: luftballongen syns inte ovanför molnen – undersök höjd, synlighet och schema",
+   "labels": [
+    {
+     "name": "bug"
+    },
+    {
+     "name": "priority: medium"
+    }
+   ],
+   "state": "open",
+   "locked": false,
+   "milestone": null,
+   "comments": 0,
+   "created_at": "2026-11-01T19:18:05Z",
+   "updated_at": "2026-11-01T19:18:06Z",
+   "closed_at": null,
+   "author_association": "OWNER",
+   "active_lock_reason": null,
+   "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+   },
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+   },
+   "body": "Lapp: Hittar inte luftballongen\n\n## Användarens rapport (2026-11-01)\n> Vi ser fortfarande ingen luftballong, är det så att den är så högt upp så man inte kan nå den? Eller är den osynlig på långt håll? Skapa en bugg för att undersöka.\n\nRapporten kom efter #1779 (`8eee6660`, publicerad), som gör att ballongen syns cirka 75 % av tiden.\n\n## Kända fakta (ur koden, inte verifierat i spelet)\n- **Höjd:** `BALLOON.floor` är 250 m. Molntäcket (`SKYLAYER`) ligger mellan 150 och 190 m och är klart ovanför cirka 220 m. Jetpackens tak är `JETPACK.ceiling` 320 m. Ballongen borde alltså gå att nå.\n- **Bana:** en cirkel med radien `BALLOON.radius` 260 m runt (−30, 30) i x/z, i hastigheten `speed` 3,5 m/s. Från innergården kan den vara upp till cirka 290 m bort.\n- **Synlighet** (`src/balloon.js` `update`): ballongen ritas bara om kameran är inom `radius + far` (1160 m) i x/z, om `balloonScale(t) > 0` och om inte `hidden`.\n  - `hidden` kommer från anroparen i `main.js`, till exempel `player.below` eller inomhus. Kontrollera vad som skickas.\n  - `this.clock()`: kontrollera att det är väggklockan i sekunder och inte ms eller speltid (#1145, där speltiden kan ställas), så att fönstret verkligen inträffar.\n\n## Misstänkta orsaker att undersöka\n1. **Schemat:** följer `clock()` det man tror (s/ms, Date.now, speltid eller verklig tid)? Synkas speltiden mellan spelare (#1774), så att det påverkar?\n2. **Dold:** vad skickar `main.js` som `hidden`? Är det sant hela tiden utomhus eller ovanför molnen?\n3. **Ritordning:** täcker molnhavet ovanför molnen (`SKYLAYER`, det opaka havet som fyller kamerans far-plan) eller himmelsshadern över ballongen? Gäller det också dimma (`fog`)? Testa med kameran ovanför molnen och ballongen i synfältet.\n4. **Culling:** `matrixAutoUpdate` och bounding sphere efter `scale.setScalar`, frustum culling när meshen skalas från 0,01, eller detail-cullern (`noDetail` är satt).\n5. **Avstånd och storlek:** hur stor är ballongen i pixlar från innergården? Är den för liten eller för ljus mot himlen för att märkas? Behövs en tydligare silhuett, eller en bana närmare området (mindre `radius`)?\n\n## Acceptans\n- Rapportera orsaken med bevis, till exempel siffror och skärmbilder från headless Chromium utan `&balloon`, med riktigt schema: från marken, från 200 m och ovanför molnen.\n- Om det är en bugg: åtgärda den. Ballongen ska synas ovanför molnen när den enligt schemat är uppe, och gå att flyga till och landa i.\n- Om allt fungerar men ballongen är svår att hitta: gör den lättare att hitta. Till exempel en mindre radie så att den cirklar närmare husen, en tydligare kontur, eller att den syns redan från marken genom glipor i molnen (*guess*). Dokumentera valet.\n- `tools/balloontest.cjs` utökas med ett test **utan** `&balloon` och `forced`, som kontrollerar synlighet från ett realistiskt flygläge ovanför molnen.\n- Resultatbilder: ballongen sedd ovanför molnen från ett vanligt jetpackläge.\n- En kort rad i `data/changelog.json` om något ändras för spelaren.\n- Ingen port, eftersom detta är spelmekanik.\n\nPrioritet: medium. Funktioner som publicerats i dag (#1770, #1779) syns inte för användaren.\n\n\n---\n_Generated by [Claude Code](https://claude.ai/code)_",
+   "state_reason": null,
+   "score": 1.0
+  },
+  {
+   "url": "https://api.github.com/repos/blamechris/chroxy/issues/8897",
+   "repository_url": "https://api.github.com/repos/blamechris/chroxy",
+   "html_url": "https://github.com/blamechris/chroxy/issues/8897",
+   "id": 6150987337,
+   "number": 8897,
+   "title": "desktop: reap a server's own cloudflared when it dies during startup with a service installed",
+   "labels": [
+    {
+     "name": "bug"
+    },
+    {
+     "name": "from-review"
+    }
+   ],
+   "state": "open",
+   "locked": false,
+   "milestone": null,
+   "comments": 0,
+   "created_at": "2026-11-01T19:17:06Z",
+   "updated_at": "2026-11-01T19:17:06Z",
+   "closed_at": null,
+   "author_association": "OWNER",
+   "active_lock_reason": null,
+   "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+   },
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+   },
+   "body": "## Context\n\nIdentified during review of PR #8896 (fix for #8893): https://github.com/blamechris/chroxy/pull/8896#issuecomment-6562619091 (S4).\n\n## Description\n\n`ServerManager::check_startup_child_exit` (`packages/desktop/src-tauri/src/server.rs`) handles a server that exits before its first health answer. It clears the pid record and sets `self.child = None` itself, without going through `release_for_service`. If that server had already started its `cloudflared` before dying, the tunnel is orphaned. #8896's proven-own reap runs only from `release_for_service` while the app still holds the child, so it never sees this case.\n\nWithout an installed service, the next start's by-port reap catches the orphan. With a service installed, the next start defers to the service and does not reap by port, so the orphaned tunnel stays up and routes to whichever process serves the port next. Every route behind it is bearer-token gated, so this is stale-tunnel cleanup, not new exposure.\n\n## Acceptance Criteria\n\n- [ ] When the app's server dies during startup, the app reaps the cloudflared it can prove that server started, using the same proof as `release_for_service` (the process group on Unix, the parent pid on Windows). It never reaps one it did not start.\n- [ ] A test shows the server pid captured in `check_startup_child_exit` reaches the reap, and that no reap runs when there was no child.\n",
+   "state_reason": null,
+   "score": 1.0
+  },
+  {
+   "url": "https://api.github.com/repos/DumbWareio/DumbTerm/issues/82",
+   "repository_url": "https://api.github.com/repos/DumbWareio/DumbTerm",
+   "html_url": "https://github.com/DumbWareio/DumbTerm/issues/82",
+   "id": 6150986683,
+   "number": 82,
+   "title": "Saved sessions: a pasted multi-line command, not run, is saved with its prompt",
+   "labels": [
+    {
+     "name": "bug"
+    }
+   ],
+   "state": "open",
+   "locked": false,
+   "milestone": null,
+   "comments": 0,
+   "created_at": "2026-11-01T19:17:02Z",
+   "updated_at": "2026-11-01T19:17:03Z",
+   "closed_at": null,
+   "author_association": "MEMBER",
+   "issue_field_values": [],
+   "type": null,
+   "active_lock_reason": null,
+   "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+   },
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+   },
+   "body": "Found while reviewing #72. The bug predates #72's fix, and that fix doesn't change it.\n\n## What happens\n\n1. At a shell prompt, paste a snippet of several lines and don't run it. Shells with bracketed paste on keep the pasted lines in the line editor.\n2. Reload the page.\n\nThe restored session keeps the old prompt with part of the pasted snippet above the new shell's prompt:\n- **zsh**, at any line count: the prompt row and the first line stay. For example, pasting three lines leaves `host% echo one`.\n- **bash**, past four lines: the prompt and every pasted line above the cursor stay. For example, pasting seven lines leaves the prompt and the first six.\n\n## Why\n\nThe save leaves the prompt out from the row marked when the shell turned bracketed paste on. A command that wraps onto several rows counts as one line from the prompt's row, but a pasted snippet's lines are separate lines. Each starts on a row of its own, so neither the terminal nor the save counts them as part of the prompt's line:\n- **zsh** marks the row below its prompt row. The snippet's second line starts there, and the prompt row doesn't run on onto it, so the save keeps the prompt row.\n- **bash** marks the prompt's row. Past four rows below the mark, the save only counts a command that runs on as one line from there.\n\n## Possible fix\n\nWhile bracketed paste is on, the shell is at its prompt, so the rows from the marked row down to the cursor are the prompt and what was typed or pasted at it. One option: count a row as part of the prompt's input when it was written between the shell turning bracketed paste on and the save, and nothing else printed in between. See `saveSessionState` in `public/managers/terminal.js`.\n\nRealism: moderate. Pasting a multi-line snippet and not running it before a reload is ordinary.\n",
+   "state_reason": null,
+   "score": 1.0
+  },
+  {
+   "url": "https://api.github.com/repos/pergalsk/api-mockup-server/issues/25",
+   "repository_url": "https://api.github.com/repos/pergalsk/api-mockup-server",
+   "html_url": "https://github.com/pergalsk/api-mockup-server/issues/25",
+   "id": 6150970084,
+   "number": 25,
+   "title": "Proxy interceptor callback gets empty params",
+   "labels": [
+    {
+     "name": "bug"
+    }
+   ],
+   "state": "open",
+   "locked": false,
+   "milestone": null,
+   "comments": 0,
+   "created_at": "2026-11-01T19:15:22Z",
+   "updated_at": "2026-11-01T19:15:22Z",
+   "closed_at": null,
+   "author_association": "OWNER",
+   "active_lock_reason": null,
+   "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+   },
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+   },
+   "body": "## What to build\n\nProxy route interceptor `callback` always gets `params: {}`. README says `params` are the request URL params (e.g. `{ id: '5' }` for `/users/:id`).\n\nCause: `lib/proxy.js:109` takes `params` from `req`. In the proxy middleware `req.params` is always empty (Express fills it only inside a router). The matched params are already known in `getMatchRouteFn` (`pathMatch.params`), but not passed to the callback.\n\nMocked routes (`lib/register.js:92`) are not affected.\n\nRepro:\n\n```javascript\n// proxy: { server: '<target>' }\n{ active: true, path: '/users/:id', callback: ({ data, params }) => ({ ...data, params }) }\n// GET /users/5 -> params is {} (expected { id: '5' })\n```\n\n## Acceptance criteria\n\n- [ ] Interceptor callback gets URL params, e.g. `{ id: '5' }` for `/users/:id`\n- [ ] `todo` test \"passes URL params to interceptor callback\" in `__tests__/proxy.test.js` becomes a normal passing test\n- [ ] `npm test` and `npx eslint .` pass\n\n## Blocked by\n\nNone - can start immediately\n",
+   "state_reason": null,
+   "score": 1.0
+  },
+  {
+   "url": "https://api.github.com/repos/sarvaniun/software-engineering-mini-project/issues/73",
+   "repository_url": "https://api.github.com/repos/sarvaniun/software-engineering-mini-project",
+   "html_url": "https://github.com/sarvaniun/software-engineering-mini-project/issues/73",
+   "id": 6150946406,
+   "number": 73,
+   "title": "[BUG] GPA is calculated but not shown on the student dashboard (TC11)",
+   "labels": [
+    {
+     "name": "bug"
+    },
+    {
+     "name": "academics"
+    }
+   ],
+   "state": "open",
+   "locked": false,
+   "milestone": null,
+   "comments": 0,
+   "created_at": "2026-11-01T19:12:52Z",
+   "updated_at": "2026-11-01T19:13:25Z",
+   "closed_at": null,
+   "author_association": "OWNER",
+   "active_lock_reason": null,
+   "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+   },
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+   },
+   "body": "**Found in:** final test run, 01-11-2026 (docs/test-cases.md, TC11)\n**Requirement:** SRSF-021 Calculate GPA\n\n**Expected:** the student dashboard shows the GPA (e.g. 8.5 for SE 85/100 + DBMS 72/100, 4 credits each)\n**Actual:** GET /api/me/marks returns the correct GPA, but the student dashboard doesn't display it\n\nKnown issue at v1.0. Listed in docs/test-summary-report.md and docs/DEVIATIONS.md.",
+   "state_reason": null,
+   "score": 1.0
+  },
+  {
+   "url": "https://api.github.com/repos/thn-inc/claude-tweaks/issues/4861",
+   "repository_url": "https://api.github.com/repos/thn-inc/claude-tweaks",
+   "html_url": "https://github.com/thn-inc/claude-tweaks/issues/4861",
+   "id": 6150944175,
+   "number": 4861,
+   "title": "reconcile: removal-failed stuck on /Users/user/Code Workspaces/claude-tweaks/.claude/worktrees/review-v6158-fixes",
+   "labels": [
+    {
+     "name": "bug"
+    }
+   ],
+   "state": "open",
+   "locked": false,
+   "milestone": null,
+   "comments": 0,
+   "created_at": "2026-11-01T19:12:38Z",
+   "updated_at": "2026-11-01T19:12:38Z",
+   "closed_at": null,
+   "author_association": "COLLABORATOR",
+   "issue_field_values": [],
+   "type": null,
+   "active_lock_reason": null,
+   "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+   },
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+   },
+   "body": "Reconcile has failed `removal-failed` on this path for 3 consecutive passes (first observed 2026-11-01T19:08:51.501Z).\n\n**Path:** `/Users/user/Code Workspaces/claude-tweaks/.claude/worktrees/review-v6158-fixes`\n**Reason:** `removal-failed`\n**Last error:** fatal: cannot remove a locked working tree, lock reason: claude session review-v6158-fixes (pid 11546 start Sat Oct 31 16:00:39 2026)\nuse 'remove -f -f' to override or unlock first\n\n**Dirty files (`git status --porcelain` at the last failed pass):**\n```\n```\n\nOnly `??` (untracked) entries that are plainly disposable make `git worktree remove --force /Users/user/Code Workspaces/claude-tweaks/.claude/worktrees/review-v6158-fixes` safe; any modified tracked entry means inspect first.\n\nFiled automatically by the claude-tweaks plugin's reconcile pass. The removal/move logic named above lives in `bin/lib/reconcile/` of `thn-inc/claude-tweaks` — not a path in this repository — so a fix, if any, belongs upstream: see thn-inc/claude-tweaks#644. This record is the human handoff for the path named above.\n\n<!-- fingerprint: reconcile-residue-33e3c238 -->",
+   "state_reason": null,
+   "score": 1.0
+  },
+  {
+   "url": "https://api.github.com/repos/sarvaniun/software-engineering-mini-project/issues/72",
+   "repository_url": "https://api.github.com/repos/sarvaniun/software-engineering-mini-project",
+   "html_url": "https://github.com/sarvaniun/software-engineering-mini-project/issues/72",
+   "id": 6150942161,
+   "number": 72,
+   "title": "[BUG] Mark sheet does not work as expected (TC12)",
+   "labels": [
+    {
+     "name": "bug"
+    },
+    {
+     "name": "academics"
+    }
+   ],
+   "state": "open",
+   "locked": false,
+   "milestone": null,
+   "comments": 0,
+   "created_at": "2026-11-01T19:12:27Z",
+   "updated_at": "2026-11-01T19:12:27Z",
+   "closed_at": null,
+   "author_association": "OWNER",
+   "active_lock_reason": null,
+   "sub_issues_summary": {
+    "total": 0,
+    "completed": 0,
+    "percent_completed": 0
+   },
+   "issue_dependencies_summary": {
+    "blocked_by": 0,
+    "total_blocked_by": 0,
+    "blocking": 0,
+    "total_blocking": 0
+   },
+   "body": "**Found in:** final test run, 01-11-2026 (docs/test-cases.md, TC12)\n**Requirement:** SRSF-022 Generate mark sheet\n\n**Steps:** log in as a student with marks → open the mark sheet → Print / Save as PDF\n**Expected:** subject-wise marks, grades and GPA matching the dashboard; buttons hidden in print\n**Actual:** <what happened>\n\nKnown issue at v1.0. Listed in docs/test-summary-report.md and docs/DEVIATIONS.md.",
+   "state_reason": null,
+   "score": 1.0
+  }
+ ],
+ "search_type": "lexical"
+}

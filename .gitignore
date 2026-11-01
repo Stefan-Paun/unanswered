@@ -1,0 +1,6 @@
+node_modules/
+data/
+dossiers/
+*.html
+!test/fixtures/*
+.DS_Store

@@ -1,0 +1,201 @@
+{
+ "items": [
+  {
+   "tags": [
+    "javascript",
+    "cloud",
+    "speech-recognition",
+    "local",
+    "webspeech-api"
+   ],
+   "is_answered": false,
+   "view_count": 70,
+   "answer_count": 0,
+   "score": -3,
+   "last_activity_date": 1793401274,
+   "creation_date": 1793401274,
+   "question_id": 80013743,
+   "content_license": "CC BY-SA 4.0",
+   "link": "https://stackoverflow.com/questions/80013743/how-can-a-user-uninstall-a-chrome-javascript-speechrecognition-install-language",
+   "title": "How can a user uninstall a Chrome JavaScript SpeechRecognition.install language pack?",
+   "body": "<p>In Chrome you can now run the JavaScript command:</p>\n<pre class=\"lang-js prettyprint-override\"><code>SpeechRecognition.install({\n          langs: [&quot;en-US&quot;],\n          processLocally: true,\n        })\n</code></pre>\n<p>Any website can run it to install a language pack to run speech recognition locally. However as explained at <a href=\"https://issues.chromium.org/issues/521896368\" rel=\"nofollow noreferrer\">https://issues.chromium.org/issues/521896368</a> , once you install a language pack then even if <code>processLocally = false</code> the Web Speech API will still use the local language pack if it is installed. There is no way for the user to know if it is using the cloud or local unless they disable their Internet. If speech recognition still works with Internet disabled then it is being processed locally. That presents a problem with users that want to go back to using the cloud because of poor performance from the local language pack because there are no instructions for uninstalling the language pack. There are no settings in Chrome. The closest setting that I can find in Chrome is &quot;Live Caption&quot;. I found that if I turn on &quot;Live Caption&quot; and then remove the English language pack then the Web Speech API will start using the cloud again. But it is a very temporary fix. Within a few minutes it seems that Chrome automatically goes back to using the local language pack for SpeechRecognition. The <code>SpeechRecognition.available</code> will show that the language pack is back to &quot;available&quot; instead of &quot;downloadable&quot; and the Web Speech API will start being processed locally again.</p>\n<p>So how can a user uninstall a SpeechRecognition language pack? It seems like a poor design to not let users easily see which language packs have been installed using <code>SpeechRecognition.install</code> along with no information about removing them.</p>\n"
+  },
+  {
+   "tags": [
+    "javascript",
+    "android",
+    "flutter",
+    "windows",
+    "state"
+   ],
+   "is_answered": false,
+   "view_count": 148,
+   "answer_count": 0,
+   "score": 0,
+   "last_activity_date": 1790156022,
+   "creation_date": 1790144591,
+   "question_id": 80005138,
+   "content_license": "CC BY-SA 4.0",
+   "link": "https://stackoverflow.com/questions/80005138/flutter-app-shows-default-counter-instead-of-my-custom-statefulwidget-todoapp",
+   "title": "Flutter app shows default counter instead of my custom StatefulWidget (TodoApp)",
+   "body": "<p>Create this file inside your <code>lib/</code> folder and paste the following code. This contains the <code>StatefulWidget</code>, the data model, and all the logic for the AppBar, ListView, and FAB.</p>\n<pre><code>import 'package:flutter/material.dart';\n\n// 1. DATA MODEL: Represents a single task\nclass Task {\n  String name;\n  bool isCompleted;\n\n  Task({required this.name, this.isCompleted = false});\n}\n\n// 2. STATEFUL WIDGET: The main Todo App\nclass TodoApp extends StatefulWidget {\n  const TodoApp({super.key});\n\n  @override\n  State&lt;TodoApp&gt; createState() =&gt; _TodoAppState();\n}\n\nclass _TodoAppState extends State&lt;TodoApp&gt; {\n  // Controller to read text from the TextField\n  final TextEditingController _taskController = TextEditingController();\n  \n  // The list that holds all our tasks\n  final List&lt;Task&gt; _tasks = [];\n\n  // Always dispose controllers to prevent memory leaks\n  @override\n  void dispose() {\n    _taskController.dispose();\n    super.dispose();\n  }\n\n  // Helper method: Adds a new task to the list\n  void _addTask() {\n    if (_taskController.text.trim().isNotEmpty) {\n      setState(() {\n        _tasks.add(Task(name: _taskController.text.trim()));\n        _taskController.clear(); // Clear the TextField after adding\n      });\n    }\n  }\n\n  // Helper method: Removes ONLY completed tasks (used by AppBar icon)\n  void _removeCompletedTasks() {\n    setState(() {\n      _tasks.removeWhere((task) =&gt; task.isCompleted);\n    });\n  }\n\n  // Helper method: Clears ALL tasks (used by FAB)\n  void _clearAllTasks() {\n    setState(() {\n      _tasks.clear();\n    });\n  }\n\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      // APPBAR: Title and Delete Completed Icon\n      appBar: AppBar(\n        title: const Text('Stateful Widget Lab Exam'),\n        actions: [\n          IconButton(\n            icon: const Icon(Icons.delete),\n            onPressed: _removeCompletedTasks,\n            tooltip: 'Delete Completed Tasks',\n          ),\n        ],\n      ),\n      \n      // BODY: Column layout\n      body: Padding(\n        padding: const EdgeInsets.all(16.0),\n        child: Column(\n          children: [\n            // Input Field\n            TextField(\n              controller: _taskController,\n              decoration: const InputDecoration(\n                border: OutlineInputBorder(),\n                hintText: 'Enter task name',\n              ),\n            ),\n            const SizedBox(height: 10),\n            \n            // Add Task Button\n            ElevatedButton(\n              onPressed: _addTask,\n              child: const Text('Add Task'),\n            ),\n            const SizedBox(height: 10),\n            \n            // Expanded prevents the &quot;Column Overflow&quot; error by giving the ListView\n            // the remaining vertical space to scroll.\n            Expanded(\n              child: ListView.builder(\n                itemCount: _tasks.length,\n                itemBuilder: (context, index) {\n                  final task = _tasks[index];\n                  \n                  // Each task is a Card containing a ListTile\n                  return Card(\n                    elevation: 2,\n                    margin: const EdgeInsets.symmetric(vertical: 4),\n                    child: ListTile(\n                      // Leading Icon: Checked or Unchecked\n                      leading: Icon(\n                        task.isCompleted ? Icons.check_circle : Icons.circle_outlined,\n                        color: task.isCompleted ? Colors.green : Colors.grey,\n                      ),\n                      \n                      // Title: Task text with strikethrough if completed\n                      title: Text(\n                        task.name,\n                        style: TextStyle(\n                          decoration: task.isCompleted \n                              ? TextDecoration.lineThrough \n                              : TextDecoration.none,\n                          color: task.isCompleted ? Colors.grey : Colors.black,\n                        ),\n                      ),\n                      \n                      // Trailing: Delete specific task\n                      trailing: IconButton(\n                        icon: const Icon(Icons.delete),\n                        onPressed: () {\n                          setState(() {\n                            _tasks.removeAt(index);\n                          });\n                        },\n                      ),\n                      \n                      // Tapping toggles the completion status\n                      onTap: () {\n                        setState(() {\n                          task.isCompleted = !task.isCompleted;\n                        });\n                      },\n                    ),\n                  );\n                },\n              ),\n            ),\n          ],\n        ),\n      ),\n      \n      // FLOATING ACTION BUTTON: Reset / Clear all tasks\n      floatingActionButton: FloatingActionButton(\n        onPressed: _clearAllTasks,\n        tooltip: 'Reset Application',\n        child: const Icon(Icons.refresh),\n      ),\n    );\n  }\n}\n\n\n main.dart\n\n\nimport 'package:flutter/material.dart';\nimport 'todo_app.dart';\n\nvoid main() {\n  runApp(const MyApp());\n}\n\nclass MyApp extends StatelessWidget {\n  const MyApp({super.key});\n\n  // This widget is the root of your application.\n  @override\n  Widget build(BuildContext context) {\n    return MaterialApp(\n      title: 'Flutter Demo',\n      theme: ThemeData(\n        // This is the theme of your application.\n        //\n        // TRY THIS: Try running your application with &quot;flutter run&quot;. You'll see\n        // the application has a purple toolbar. Then, without quitting the app,\n        // try changing the seedColor in the colorScheme below to Colors.green\n        // and then invoke &quot;hot reload&quot; (save your changes or press the &quot;hot\n        // reload&quot; button in a Flutter-supported IDE, or press &quot;r&quot; if you used\n        // the command line to start the app).\n        //\n        // Notice that the counter didn't reset back to zero; the application\n        // state is not lost during the reload. To reset the state, use hot\n        // restart instead.\n        //\n        // This works for code too, not just values: Most code changes can be\n        // tested with just a hot reload.\n        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),\n      ),\n      home: const TodoApp(), // &lt;--- UPDATED THIS LINE TO RUN YOUR TODO APP\n    );\n  }\n}\n\nclass MyHomePage extends StatefulWidget {\n  const MyHomePage({super.key, required this.title});\n\n  // This widget is the home page of your application. It is stateful, meaning\n  // that it has a State object (defined below) that contains fields that affect\n  // how it looks.\n\n  // This class is the configuration for the state. It holds the values (in this\n  // case the title) provided by the parent (in this case the App widget) and\n  // used by the build method of the State. Fields in a Widget subclass are\n  // always marked &quot;final&quot;.\n\n  final String title;\n\n  @override\n  State&lt;MyHomePage&gt; createState() =&gt; _MyHomePageState();\n}\n\nclass _MyHomePageState extends State&lt;MyHomePage&gt; {\n  int _counter = 0;\n\n  void _incrementCounter() {\n    setState(() {\n      // This call to setState tells the Flutter framework that something has\n      // changed in this State, which causes it to rerun the build method below\n      // so that the display can reflect the updated values. If we changed\n      // _counter without calling setState(), then the build method would not be\n      // called again, and so nothing would appear to happen.\n      _counter++;\n    });\n  }\n\n  @override\n  Widget build(BuildContext context) {\n    // This method is rerun every time setState is called, for instance as done\n    // by the _incrementCounter method above.\n    //\n    // The Flutter framework has been optimized to make rerunning build methods\n    // fast, so that you can just rebuild anything that needs updating rather\n    // than having to individually change instances of widgets.\n    return Scaffold(\n      appBar: AppBar(\n        // TRY THIS: Try changing the color here to a specific color (to\n        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar\n        // change color while the other colors stay the same.\n        backgroundColor: Theme.of(context).colorScheme.inversePrimary,\n        // Here we take the value from the MyHomePage object that was created by\n        // the App.build method, and use it to set our appbar title.\n        title: Text(widget.title),\n      ),\n      body: Center(\n        // Center is a layout widget. It takes a single child and positions it\n        // in the middle of the parent.\n        child: Column(\n          // Column is also a layout widget. It takes a list of children and\n          // arranges them vertically. By default, it sizes itself to fit its\n          // children horizontally, and tries to be as tall as its parent.\n          //\n          // Column has various properties to control how it sizes itself and\n          // how it positions its children. Here we use mainAxisAlignment to\n          // center the children vertically; the main axis here is the vertical\n          // axis because Columns are vertical (the cross axis would be\n          // horizontal).\n          //\n          // TRY THIS: Invoke &quot;debug painting&quot; (choose the &quot;Toggle Debug Paint&quot;\n          // action in the IDE, or press &quot;p&quot; in the console), to see the\n          // wireframe for each widget.\n          mainAxisAlignment: MainAxisAlignment.center,\n          children: &lt;Widget&gt;[\n            const Text('You have pushed the button this many times:'),\n            Text(\n              '$_counter',\n              style: Theme.of(context).textTheme.headlineMedium,\n            ),\n          ],\n        ),\n      ),\n      floatingActionButton: FloatingActionButton(\n        onPressed: _incrementCounter,\n        tooltip: 'Increment',\n        child: const Icon(Icons.add),\n      ), // This trailing comma makes auto-formatting nicer for build methods.\n    );\n  }\n}\n</code></pre>\n"
+  },
+  {
+   "tags": [
+    "advice",
+    "javascript",
+    "performance",
+    "http",
+    "caching"
+   ],
+   "is_answered": false,
+   "view_count": 114,
+   "answer_count": 0,
+   "score": -2,
+   "last_activity_date": 1789816846,
+   "creation_date": 1789816846,
+   "question_id": 80004270,
+   "content_license": "CC BY-SA 4.0",
+   "link": "https://stackoverflow.com/questions/80004270/build-update-from-server-to-client",
+   "title": "Build update from Server to Client",
+   "body": "<p>I’m working on a web application where the client/browser caches static build files (JS, CSS, etc.) for several minutes to improve performance and reduce unnecessary requests.</p>\n<p>The problem occurs when a <strong>new build is deployed on the server while an existing client still has the previous build cached</strong>.</p>\n<p>For example:</p>\n<ol>\n<li><p>Client loads <strong>Build A</strong> and caches its static assets for 5–10 minutes.</p>\n</li>\n<li><p>A new version is deployed on the server, generating <strong>Build B</strong>.</p>\n</li>\n<li><p>The <strong>client is still using</strong> the cached <strong>Build A</strong> files.</p>\n</li>\n<li><p>The user may continue running the old version until the cache expires or they manually refresh/clear the cache.</p>\n</li>\n</ol>\n<p>I’d like to know whether there is a standard way to make the client <strong>automatically detect that a newer build is available and switch to the new build</strong>, without relying on a fixed cache timeout or requiring the user to manually clear their cache.</p>\n<p>Ideally, I’m looking for something along the lines of:</p>\n<pre><code>Client\n  ↓\nHas cached Build A\n  ↓\nServer deploys Build B\n  ↓\nClient detects Build B is available\n  ↓\nDownloads the new assets\n  ↓\nSwitches to Build B\n</code></pre>\n<p>I understand that frameworks such as Next.js can revalidate or regenerate content (for example, ISR), but that primarily concerns <strong>application data/content</strong>. My question is specifically about <strong>versioning and invalidating the client's cached static build assets</strong> after a new deployment.</p>\n<p><strong>What is the recommended production approach for this?</strong></p>\n<p>I’m particularly interested in how modern production applications handle this problem while still maintaining aggressive browser caching for performance.</p>\n"
+  },
+  {
+   "tags": [
+    "javascript",
+    "html",
+    "intersection-observer"
+   ],
+   "is_answered": false,
+   "view_count": 128,
+   "answer_count": 0,
+   "score": -4,
+   "last_activity_date": 1792693660,
+   "creation_date": 1789743462,
+   "last_edit_date": 1792693660,
+   "question_id": 80004082,
+   "content_license": "CC BY-SA 4.0",
+   "link": "https://stackoverflow.com/questions/80004082/intersectionobserver-with-bxslider-background-image-slideshow-behaves-strangely",
+   "title": "IntersectionObserver with bxslider background-image slideshow behaves strangely",
+   "body": "<p>It does lazy load the images, but when I resize the browser, the image is gone and I see the black defined for class <code>bxslider</code>. The observed element has the class <code>lazy-background-loaded</code>. But there is no image visible. I fiddled around with <code>rootMargin</code> and <code>scrollMargin</code>. But the image disappears on resize. In order to prevent the disappearance, I added another function for the resize event. The image remains on the screen, but during the resize event a flickering occurs.</p>\n<p>Is the <code>IntersectionObserver()</code> suitable for a horizontal background-image slide show?</p>\n<p>Has anyone ever successfully tried to use <code>IntersectionObserver()</code> in this context?</p>\n<p>Is there a better way to tell <code>IntersectionObserver()</code> to permanently keep the <code>style=&quot;background-image:url('image.jpg')&quot;</code> once an image has entered the viewport and not to loose it, when the windowsize changes? Is it possible to get rid of that flickering the resize function produces? (i tried a delay function, but that shows a blank screen while resizing, and when the event is completed the image shows. Not really good)</p>\n<p>By the way: this method is not suitable for bx-slider <code>option: infiniteLoop:true</code>. Jumping from first to last slide shows a blank screen first and then the slide comes in.</p>\n<p>Thanks for your answer.</p>\n<p><div class=\"snippet\" data-lang=\"js\" data-hide=\"false\" data-console=\"true\" data-babel=\"false\" data-babel-preset-react=\"false\" data-babel-preset-ts=\"false\">\n<div class=\"snippet-code\">\n<pre class=\"snippet-code-js lang-js prettyprint-override\"><code>//js(loaded in footer)\n\ndocument.addEventListener('DOMContentLoaded', () =&gt; {\n  const targets = document.querySelectorAll('.lazy-background');\n\n  const observer = new IntersectionObserver((entries, obs) =&gt; {\n    entries.forEach(entry =&gt; {\n      if (!entry.isIntersecting) return;\n      const el = entry.target;\n      const src = el.dataset.bgSrc;\n      if (src) el.style.backgroundImage = `url('${src}')`;\n      el.classList.replace('lazy-background', 'lazy-background-loaded');\n      obs.unobserve(el);\n    });\n  }, {\n    root: document.querySelector(\".bx-viewport\"),\n    rootMargin: \"0px\",\n    scrollMargin: \"0px\",\n    threshold: 0,\n  });\n\n  targets.forEach(el =&gt; observer.observe(el));\n});\n\n//i added this resize function in order\n//to prevent the images to disappear when the\n//browser window is changed.\n//The images remain, but a flickering occurs.\n\nwindow.addEventListener('resize', function(event) {\n    const targets = document.querySelectorAll('.lazy-background-loaded');\n    const observer = new IntersectionObserver((entries, obs) =&gt; {\n    entries.forEach(entry =&gt; {\n    const el  = entry.target;\n    const src = el.dataset.bgSrc;\n    console.log(src);\n    if (src) el.style.backgroundImage = `url('${src}')`;\n    el.style.backgroundImage = 'url('+src+')';\n    obs.unobserve(el);\n    });\n }, {root: document.querySelector(\".bx-viewport\"),\n    rootMargin: '0px',\n    scrollMargin: \"0px\",\n    threshold: 0 \n});\ntargets.forEach(el =&gt; observer.observe(el));\n}, true);\n\n\n$(document).ready(function() {\n  $(\".bxslider\").bxSlider();\n});</code></pre>\n<pre class=\"snippet-code-css lang-css prettyprint-override\"><code>.lazy-background {\n  background-color: #71797E;\n  /* placeholder colour */\n  min-height: 250px;\n  /* reserve space — prevent CLS */\n  background-size: cover;\n  background-position: center;\n}</code></pre>\n<pre class=\"snippet-code-html lang-html prettyprint-override\"><code>&lt;link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/bxslider@4.2.17/dist/jquery.bxslider.min.css\"&gt;\n\n&lt;script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js\"&gt;&lt;/script&gt;\n\n&lt;script src=\"https://cdn.jsdelivr.net/npm/bxslider@4.2.17/dist/jquery.bxslider.min.js\"&gt;&lt;/script&gt;\n\n&lt;ul class=\"bxslider\" style=\"background-color:black;\"&gt;\n\n  &lt;li style=\"background-image: url('https://placehold.co/300x200/lightgray/black?text=background');\"&gt;\n    &lt;div id=\"first-slide\" class=\"mybx-caption\"&gt;\n      &lt;span&gt;welcome&lt;/span&gt;\n    &lt;/div&gt;\n  &lt;/li&gt;\n  \n  &lt;li class=\"lazy-background\" data-bg-src=https://placehold.co/300x200/orange/white?text=image_1\"&gt;\n    &lt;div class=\"mybx-caption\"&gt;\n      &lt;span&gt;Caption 1&lt;/span&gt;\n    &lt;/div&gt;\n  &lt;/li&gt;\n  \n  &lt;li class=\"lazy-background\" data-bg-src=\"https://placehold.co/300x200/green/white?text=image_2\"&gt;\n    &lt;div class=\"mybx-caption\"&gt;\n      &lt;span&gt;Caption 2&lt;/span&gt;\n    &lt;/div&gt;\n  &lt;/li&gt;\n  \n  &lt;li class=\"lazy-background\" data-bg-src=\"https://placehold.co/300x200/blue/white?text=image_3\"&gt;\n    &lt;div class=\"mybx-caption\"&gt;\n      &lt;span&gt;Caption 3&lt;/span&gt;\n    &lt;/div&gt;\n  &lt;/li&gt;\n  \n&lt;/ul&gt;</code></pre>\n</div>\n</div>\n</p>\n"
+  },
+  {
+   "tags": [
+    "javascript",
+    "dependencies",
+    "pnpm"
+   ],
+   "is_answered": false,
+   "view_count": 86,
+   "answer_count": 0,
+   "score": 1,
+   "last_activity_date": 1788692179,
+   "creation_date": 1788692179,
+   "question_id": 80001156,
+   "content_license": "CC BY-SA 4.0",
+   "link": "https://stackoverflow.com/questions/80001156/can-pnpm-be-configured-so-i-can-optionally-run-with-a-cutting-edge-dependency",
+   "title": "Can pnpm be configured so I can optionally run with a &#39;cutting edge dependency&#39; while I&#39;m working on a branch?",
+   "body": "<p>I'm using a dev dependency in my project that is released as a binary before it gets published as an npm package.</p>\n<p>The latest version has a feature I requested, and I want to develop with it now, so I can feedback before it's published.</p>\n<p>I know how to grab the binary in a script that pnpm will run for me. But I'm not sure how to declare this 'cutting edge dependency'?</p>\n<p>Is this something pnpm can help with, or do I just need to 'hack' my package file, knowing that pnpm will ignore it?</p>\n"
+  },
+  {
+   "tags": [
+    "tooling-recommendation",
+    "javascript"
+   ],
+   "is_answered": false,
+   "view_count": 54,
+   "answer_count": 0,
+   "score": 0,
+   "last_activity_date": 1787567274,
+   "creation_date": 1787562590,
+   "last_edit_date": 1787567274,
+   "question_id": 79997731,
+   "content_license": "CC BY-SA 4.0",
+   "link": "https://stackoverflow.com/questions/79997731/how-to-handle-talend-jxls-templates-in-apache-hop",
+   "title": "How to handle Talend JXLS templates in Apache Hop?",
+   "body": "<p>How to handle Talend JXLS templates in Apache Hop?</p>\n<p>I am migrating ETL jobs from Talend to Apache Hop.</p>\n<p>In the existing Talend job, we are using a JXLS template to generate Excel reports. However, I could not find support for the Talend JXLS template functionality in Apache Hop.</p>\n"
+  },
+  {
+   "tags": [
+    "javascript",
+    "android-webview",
+    "telegram",
+    "telegram-bot",
+    "ton"
+   ],
+   "is_answered": false,
+   "view_count": 248,
+   "answer_count": 0,
+   "score": -1,
+   "last_activity_date": 1787507059,
+   "creation_date": 1787450913,
+   "last_edit_date": 1787507059,
+   "question_id": 79997452,
+   "content_license": "CC BY-SA 4.0",
+   "link": "https://stackoverflow.com/questions/79997452/how-to-force-a-link-to-open-in-the-system-browser-from-telegrams-in-app-browser",
+   "title": "How to force a link to open in the system browser from Telegram&#39;s in-app browser (WebView)?",
+   "body": "<p>I'm building a React web application that uses TonConnect to connect TON wallets. The flow works perfectly on desktop browsers and on mobile when opened directly in Chrome.</p>\n<p>However, when the application is opened from Telegram (via a link shared in a chat), it loads inside Telegram's built-in WebView. The wallet connection works, but after connecting, the wallet app redirects back to the page. This causes issues because the WebView doesn't handle the redirect properly – sometimes it opens a different page, and sometimes it gives an &quot;Aw, Snap!&quot; error.</p>\n<p>Is there any reliable way to force a link (e.g., <code>https://example.com</code>) to open in the user's default system browser from Telegram's in-app browser, without requiring the user to manually copy and paste the URL?</p>\n"
+  },
+  {
+   "tags": [
+    "javascript",
+    "css",
+    "codemirror"
+   ],
+   "is_answered": false,
+   "view_count": 132,
+   "answer_count": 0,
+   "score": 0,
+   "last_activity_date": 1787344904,
+   "creation_date": 1787334235,
+   "last_edit_date": 1787344904,
+   "question_id": 79997160,
+   "content_license": "CC BY-SA 4.0",
+   "link": "https://stackoverflow.com/questions/79997160/how-can-i-apply-custom-syntax-highlighting-colors-to-codemirror-to-match-prism-j",
+   "title": "How can I apply custom syntax highlighting colors to CodeMirror to match Prism.js Okaidia theme?",
+   "body": "<p>I am building a coding tutorial website and using <strong>Prism.js (Okaidia theme)</strong> for static example boxes and <strong>CodeMirror</strong> for the interactive editor. I want to match the colors of both.</p>\n<p><strong>The Comparison:</strong></p>\n<ul>\n<li><p><strong>Prism (Target):</strong> Correcty highlights CSS selectors (pink/blue), JS variables (blue), and Python built-ins (pink).</p>\n</li>\n<li><p><strong>CodeMirror (The Issue):</strong> Even after applying custom CSS with !important, specific tokens like .selectors, variables, and built-in functions remain white or default yellow. They don't pick up the colors I defined.</p>\n</li>\n</ul>\n<p><strong>What I want:</strong>\nHow can I make CodeMirror's tokenization match Prism's style so that the user has a consistent experience across the website?&quot;</p>\n<pre><code>/* Custom CSS I tried to match Prism colors */\n.CodeMirror .cm-tag { color: #f92672 !important; }\n.CodeMirror .cm-attribute { color: #a6e22e !important; }\n/* This works for basic tags, but fails for deep tokens like .selectors or inside style=&quot;&quot; */\n.CodeMirror .cm-property, .CodeMirror .cm-qualifier { color: #a6e22e !important; }\n</code></pre>\n<pre><code>const editor = CodeMirror.fromTextArea(document.getElementById(&quot;code&quot;), {\n  mode: &quot;htmlmixed&quot;,\n  theme: &quot;monokai&quot;\n})\n</code></pre>\n"
+  },
+  {
+   "tags": [
+    "advice",
+    "javascript",
+    "stripe-payments"
+   ],
+   "is_answered": false,
+   "view_count": 136,
+   "answer_count": 0,
+   "score": 1,
+   "last_activity_date": 1787237464,
+   "creation_date": 1787175313,
+   "last_edit_date": 1787237464,
+   "question_id": 79996644,
+   "content_license": "CC BY-SA 4.0",
+   "link": "https://stackoverflow.com/questions/79996644/stripe-connect-onboarding-works-in-test-mode-but-redirects-to-login-in-live-mode",
+   "title": "Stripe Connect onboarding works in test mode but redirects to login in live mode",
+   "body": "<p>I am developing an app which integrate Stripe as payment, but the user doesn't need the hassle going to Stripe to manage everything, they can do it in the app. So when activating Stripe on testing env it works refer to a screenshot</p>\n<p><img src=\"https://i.sstatic.net/mTxUFQDs.png\" alt=\"on testing env\" /></p>\n<p>This is what I want, user add info and verify the identity and redirect back to my platform and then boom voila. This works on testing environment but on the next screenshots, it's different instead of landing on this screen, am getting this one</p>\n<p><img src=\"https://i.sstatic.net/YFyQvEvx.png\" alt=\"after user click connect it brings this\" /></p>\n<p>as asking me to login, my question is there anything I missed on prod? or what can I do to get onboarding screen without first login into Stripe. Because I don't want the user to interact with Stripe.</p>\n<p>this is my code</p>\n<pre><code>&lt;script&gt;\nimport { loadConnectAndInitialize } from &quot;@stripe/connect-js&quot;;\nimport { apiDataService } from &quot;@/services/apiDataService&quot;;\nexport default {\n    data() {\n        return {\n            stripeState: &quot;idle&quot;,\n            checkingStripeStatus: true,\n            stripeData: null,\n            stripeClientId: null,\n            loading: false,\n            error: null,\n        };\n    },\n    methods: {\n        async getStripeStatus() {\n            this.checkingStripeStatus = true;\n            this.error = null;\n            try {\n                const res = await apiDataService.stripeStatus();\n                const data = res.data;\n                if (data.is_fully_onboarded) {\n                    this.stripeData = data;\n                    this.stripeState = &quot;connected&quot;;\n                } else if (data.stripe_account_id) {\n                    this.stripeData = data;\n                    this.stripeClientId = data.stripe_account_id;\n                    this.stripeState = &quot;onboarding&quot;;\n                    await this.$nextTick();\n                    await this.initializeStripeConnect();\n                } else {\n                    this.stripeState = &quot;idle&quot;;\n                }\n            } catch (err) {\n                console.error(err);\n                this.error = &quot;Failed to fetch Stripe status&quot;;\n                this.stripeState = &quot;idle&quot;;\n            } finally {\n                this.checkingStripeStatus = false;\n            }\n        },\n        async startConnect() {\n            this.loading = true;\n            this.error = null;\n            try {\n                const res = await apiDataService.connectStripe();\n                const data = res.data;\n                if (data.is_fully_onboarded) {\n                    this.stripeData = data;\n                    this.stripeState = &quot;connected&quot;;\n                    return;\n                }\n                if (data.needs_onboarding &amp;&amp; data.onboarding_url) {\n                    window.location.href = data.onboarding_url;\n                    return;\n                }\n                this.stripeClientId = data.account_id;\n                this.stripeState = &quot;onboarding&quot;;\n                await this.$nextTick();\n                await this.initializeStripeConnect();\n            } catch (err) {\n                console.error(err);\n                this.error = err.response?.data?.error || &quot;Failed to create Stripe account&quot;;\n            } finally {\n                this.loading = false;\n            }\n        },\n        async initializeStripeConnect() {\n            if (!this.$refs.stripeContainer) {\n                console.error(&quot;Stripe container not found&quot;);\n                return;\n            }\n            const publishableKey = process.env.VUE_APP_STRIPE_PUBLISHABLE_KEY;\n            if (!publishableKey) {\n                this.error = &quot;Stripe publishable key not configured&quot;;\n                return;\n            }\n            try {\n                this.$refs.stripeContainer.innerHTML = &quot;&quot;;\n                const instance = await loadConnectAndInitialize({\n                    publishableKey,\n                    fetchClientSecret: async () =&gt; {\n                        const response = await apiDataService.clientSecretEmbedding({\n                            account_id: this.stripeClientId,\n                        });\n                        return response.data.client_secret;\n                    },\n                });\n                const onboarding = instance.create(&quot;account-onboarding&quot;);\n                this.$refs.stripeContainer.appendChild(onboarding);\n                onboarding.addEventListener(&quot;onboarding_completed&quot;, () =&gt; {\n                    this.stripeState = &quot;connected&quot;;\n                    this.getStripeStatus();\n                });\n                onboarding.addEventListener(&quot;onboarding_exited&quot;, () =&gt; {\n                    this.getStripeStatus();\n                });\n            } catch (err) {\n                console.error(&quot;Stripe error:&quot;, err);\n                this.error = err.message || &quot;Failed to initialize Stripe onboarding&quot;;\n            }\n        },\n    },\n    mounted() {\n        this.getStripeStatus();\n    },\n};\n&lt;/script&gt;\n</code></pre>\n<p>and for template</p>\n<pre><code>&lt;div v-if=&quot;stripeState === 'onboarding'&quot;&gt; &lt;div ref=&quot;stripeContainer&quot;&gt;&lt;/div&gt; &lt;/div&gt;\n</code></pre>\n<p>The backend API, It provides:</p>\n<pre><code>{\n  &quot;stripe_account_id&quot;: &quot;acct_xxx&quot;,\n  &quot;is_fully_onboarded&quot;: false\n}\n</code></pre>\n<p>and a separate endpoint returns the client secret required by</p>\n<pre><code>loadConnectAndInitialize().\n\n</code></pre>\n"
+  },
+  {
+   "tags": [
+    "javascript",
+    "google-apps-script",
+    "google-cloud-platform",
+    "chatbot",
+    "google-workspace"
+   ],
+   "is_answered": false,
+   "view_count": 128,
+   "answer_count": 0,
+   "score": 1,
+   "last_activity_date": 1787122043,
+   "creation_date": 1787122043,
+   "question_id": 79996401,
+   "content_license": "CC BY-SA 4.0",
+   "link": "https://stackoverflow.com/questions/79996401/google-chat-api-apps-script-cant-handle-the-apps-response-error-when-click",
+   "title": "Google Chat API + Apps Script &quot;Can&#39;t handle the app&#39;s response&quot; error when clicking a card button (Web App / OAuth2)",
+   "body": "<p>I'm building a Google Chat Bot integration using Google Apps Script and GCP Service Account (OAuth2).</p>\n<p><strong>The Flow:</strong></p>\n<ol>\n<li><p>Form submitted -&gt; Apps Script sends a Card message to a Google Chat space using <code>UrlFetchApp</code> and OAuth2 token. (This step works fine!).</p>\n</li>\n<li><p>The user inputs text into the Card's <code>textInput</code> and clicks the &quot;Submit&quot; button.</p>\n</li>\n<li><p>The card button calls <code>processarRespostaChat</code> / <code>doPost</code>.</p>\n</li>\n</ol>\n<p><strong>The Issue:</strong> When the button is clicked, Google Chat shows an error in the UI and Cloud Logging records</p>\n<blockquote>\n<p>Code 3: Can't handle the app's response. If your Chat app is configured as an add-on, see &quot;Chat actions&quot;...</p>\n</blockquote>\n<p><strong>Configuration in Google Cloud Chat API:</strong></p>\n<ul>\n<li><p>Interactive features: Turned ON</p>\n</li>\n<li><p>Functionality: Receive 1:1 and Join Spaces</p>\n</li>\n<li><p>Connection settings: HTTP URL (pointing to my Web App deployment URL <code>[https://script.google.com/macros/s/.../exec](https://script.google.com/macros/s/.../exec)</code>)</p>\n</li>\n<li><p>Deployment settings: Executed as Me, Access: Anyone.</p>\n</li>\n</ul>\n<p><strong>My Apps Script Code (Sanitized):</strong></p>\n<pre><code>var CHAT_WEBHOOK = &quot;https://chat.googleapis.com/v1/spaces/XXX/messages?key=XXX&amp;token=XXX&quot;;\nvar ID_ESPACO = &quot;spaces/XXX&quot;;\nvar SERVICE_ACCOUNT_EMAIL = &quot;bot@my-project.iam.gserviceaccount.com&quot;;\nvar PRIVATE_KEY = &quot;-----BEGIN PRIVATE KEY-----\\nMY_KEY\\n-----END PRIVATE KEY-----\\n&quot;;\n\nfunction doGet(e) {\n  return ContentService.createTextOutput(&quot;Bot Active&quot;);\n}\n\nfunction doPost(e) {\n  var data = JSON.parse(e.postData.contents);\n  var response = processarCliqueCard(data);\n  return ContentService.createTextOutput(JSON.stringify(response))\n    .setMimeType(ContentService.MimeType.JSON);\n}\n\nfunction processarCliqueCard(evento) {\n  // Processes spreadsheet data and sends email...\n  return {\n    &quot;actionResponse&quot;: { &quot;type&quot;: &quot;UPDATE_MESSAGE&quot; },\n    &quot;text&quot;: &quot;Success message&quot;\n  };\n}\n</code></pre>\n<p>Has anyone faced a similar Code 3 error when handling interactive cards via Web App HTTP URL in Google Chat? What am I missing in the response structure?</p>\n"
+  }
+ ],
+ "has_more": true,
+ "quota_max": 300,
+ "quota_remaining": 298
+}

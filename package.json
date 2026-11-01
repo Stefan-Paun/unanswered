@@ -1,0 +1,11 @@
+{
+  "name": "ungeloest",
+  "version": "0.1.0",
+  "description": "Findet offene Fehler und Fragen ohne Antwort auf GitHub, Stack Overflow und in Foren und bewertet sie nach Lösbarkeit und Wirkung.",
+  "type": "module",
+  "bin": { "ungeloest": "bin/ungeloest.mjs" },
+  "scripts": { "test": "node --test test/*.test.mjs", "scan": "node bin/ungeloest.mjs scan" },
+  "engines": { "node": ">=20" },
+  "license": "MIT",
+  "private": false
+}

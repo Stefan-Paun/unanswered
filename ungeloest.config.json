@@ -1,0 +1,66 @@
+{
+  "sprachen": [
+    "javascript",
+    "typescript",
+    "python"
+  ],
+  "alterTage": {
+    "min": 2,
+    "max": 60
+  },
+  "top": 20,
+  "maxProOrt": 3,
+  "github": {
+    "labels": [
+      "bug"
+    ],
+    "minSterne": 20,
+    "proSprache": 30,
+    "maxRepoAbfragen": 40
+  },
+  "stackoverflow": {
+    "tags": [
+      "javascript",
+      "typescript",
+      "python",
+      "node.js"
+    ],
+    "proTag": 30,
+    "minQuota": 20
+  },
+  "discourse": {
+    "foren": [
+      {
+        "host": "discuss.python.org",
+        "sprache": "python",
+        "gewicht": 60
+      },
+      {
+        "host": "users.rust-lang.org",
+        "sprache": "rust",
+        "gewicht": 40
+      },
+      {
+        "host": "discourse.mozilla.org",
+        "sprache": "javascript",
+        "gewicht": 40
+      }
+    ]
+  },
+  "ausschluss": {
+    "titelMuster": [
+      "\\[meta\\]",
+      "announcement",
+      "ankündigung",
+      "release notes",
+      "review request",
+      "^pep\\b",
+      "proposal",
+      "^idea",
+      "^rfc",
+      "introducing",
+      "^show(case)?:"
+    ],
+    "repos": []
+  }
+}
