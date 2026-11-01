@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Morgen-Scan: jeden Tag um 07:10 die Liste als HTML + Markdown nach ~/ungeloest/data schreiben.
+       Einschalten (macht Stefan selbst):
+         cp ~/ungeloest/tools/at.stefanpaun.ungeloest.plist ~/Library/LaunchAgents/
+         launchctl load ~/Library/LaunchAgents/at.stefanpaun.ungeloest.plist
+       Ausschalten: launchctl unload ~/Library/LaunchAgents/at.stefanpaun.ungeloest.plist -->
+  <key>Label</key><string>at.stefanpaun.ungeloest</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-lc</string>
+    <string>~/ungeloest/tools/morgen.sh</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>10</integer></dict>
+  <key>StandardOutPath</key><string>/tmp/ungeloest-launchd.log</string>
+  <key>StandardErrorPath</key><string>/tmp/ungeloest-launchd.log</string>
+</dict>
+</plist>

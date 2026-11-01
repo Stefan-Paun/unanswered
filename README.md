@@ -25,6 +25,8 @@ Keine Abhängigkeiten. GitHub-Token kommt automatisch aus `gh auth token` oder `
 | Stack Overflow | Fragen ohne Antwort je Tag | Stack Exchange API, Quota wird aus jeder Antwort gelesen |
 | Discourse-Foren | Themen ohne Antwort (`status:noreplies`) | `search.json` jedes Forums aus der Config |
 
+Reddit ist bewusst nicht dabei: Das Subreddit-RSS trägt keine Kommentarzahl, und das RSS je Beitrag antwortet ohne Login sofort mit 429. Dafür bräuchte es eine OAuth-App.
+
 ## Bewertung
 
 Zwei Zahlen 0–100, Gesamt = √(Lösbarkeit × Wirkung).
@@ -55,6 +57,10 @@ IDs sehen so aus: `gh:owner/repo#123`, `so:80005138`, `dc:discuss.python.org/109
 2. `dossier <id>` für ein, zwei Treffer.
 3. In einer eigenen Sitzung reproduzieren, Ursache finden, Fix testen.
 4. Antwort oder PR **selbst** schreiben und posten, Checkliste im Dossier abhaken.
+
+## Jeden Morgen automatisch
+
+`tools/at.stefanpaun.ungeloest.plist` ist ein launchd-Job, der um 07:10 `tools/morgen.sh` startet (HTML + Markdown nach `data/`, Benachrichtigung, wenn `terminal-notifier` installiert ist). Einschalten musst du selbst, die Schritte stehen in der Datei. `tools/routine-nachtschicht.md` skizziert die Cloud-Variante für später.
 
 ## Entwickeln
 
