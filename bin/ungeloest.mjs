@@ -6,6 +6,8 @@ import { sammle } from '../lib/sources/index.mjs';
 import { parseIssues, parseRepo } from '../lib/sources/github.mjs';
 import { parseFragen } from '../lib/sources/stackoverflow.mjs';
 import { parseThemen } from '../lib/sources/discourse.mjs';
+import { parseDiskussionen, planeAnfragen as planeGd, GRAPHQL } from '../lib/sources/github-discussions.mjs';
+import { parseIssues as parseGitlab, planeAnfragen as planeGl } from '../lib/sources/gitlab.mjs';
 import { ausgeschlossen } from '../lib/normalize.mjs';
 import { bewerte, sortiere, verteile } from '../lib/score.mjs';
 import { ladeGesehen, speichereGesehen, nurNeue, merkeDir, auffrischen, vergesseAlte } from '../lib/store.mjs';
@@ -17,19 +19,19 @@ import { schreibeDossier, dossierText } from '../lib/dossier.mjs';
 const HILFE = `ungeloest – findet offene Fehler und Fragen, auf die noch niemand geantwortet hat
 
 Befehle:
-  scan                 GitHub-Issues, Stack Overflow und Discourse-Foren absuchen (Standard)
+  scan                 GitHub-Issues, GitHub Discussions, GitLab-Issues, Stack Overflow und Discourse-Foren absuchen (Standard)
   show <id>            einen Treffer aus dem letzten Scan anzeigen
   dossier <id>         Steckbrief dossiers/<id>.md schreiben (Problem, Links, Checkliste; --force überschreibt)
   list                 alle Treffer des letzten Scans auflisten
 
 Optionen für scan:
-  --quellen gh,so,dc   nur diese Quellen (Standard: alle)
+  --quellen gh,so,dc,gd,gl  nur diese Quellen (Standard: alle; gd = GitHub Discussions, gl = GitLab; --quelle ist dasselbe)
   --top <n>            so viele Treffer zeigen (Standard: aus Config, 20)
   --alle               auch schon gezeigte Treffer anzeigen
   --html <pfad>        HTML-Bericht schreiben (Dracula, ohne Script)
   --md <pfad>          Markdown-Liste schreiben
   --json <pfad>        alle bewerteten Treffer als JSON schreiben
-  --dry-run            keine Netzanfragen, Fixtures aus test/fixtures nutzen; schreibt keinen Zustand
+  --dry-run            keine Netzanfragen, Fixtures aus test/fixtures nutzen, zeigt die geplanten Abfragen; schreibt keinen Zustand
   --config <pfad>      andere Config-Datei
   --force              bei dossier: vorhandene Datei überschreiben
   -h, --help           diese Hilfe
@@ -47,7 +49,7 @@ function parseArgs(argv) {
     const a = argv[i];
     const next = () => { if (i + 1 >= argv.length) throw new Error(`Option ${a} braucht einen Wert`); return argv[++i]; };
     if (a === '-h' || a === '--help') hilfe = true;
-    else if (a === '--quellen') o.quellen = next().split(',').map((s) => s.trim()).filter(Boolean);
+    else if (a === '--quellen' || a === '--quelle') o.quellen = next().split(',').map((s) => s.trim()).filter(Boolean);
     else if (a === '--top') o.top = Number(next());
     else if (a === '--alle') o.alle = true;
     else if (a === '--html') o.html = next();
@@ -66,9 +68,9 @@ function parseArgs(argv) {
     o.befehl = rest[0];
     o.id = rest[1] || null;
   }
-  if (o.quellen && !o.quellen.length) throw new Error('--quellen braucht mindestens eine Quelle (gh, so, dc)');
-  const fremd = (o.quellen || []).filter((q) => !['gh', 'so', 'dc'].includes(q));
-  if (fremd.length) throw new Error(`Unbekannte Quelle ${fremd.join(', ')} (erlaubt: gh, so, dc)`);
+  if (o.quellen && !o.quellen.length) throw new Error('--quellen braucht mindestens eine Quelle (gh, so, dc, gd, gl)');
+  const fremd = (o.quellen || []).filter((q) => !['gh', 'so', 'dc', 'gd', 'gl'].includes(q));
+  if (fremd.length) throw new Error(`Unbekannte Quelle ${fremd.join(', ')} (erlaubt: gh, so, dc, gd, gl)`);
   if (['scan', 'list'].includes(o.befehl) && o.id) throw new Error(`${o.befehl} nimmt kein weiteres Argument (${o.id})`);
   if (o.top != null && !(Number.isInteger(o.top) && o.top > 0)) throw new Error('--top braucht eine ganze Zahl > 0');
   return o;
@@ -79,18 +81,45 @@ const LETZTER = path.join(DATEN, 'letzter-scan.json');
 const GESEHEN = path.join(DATEN, 'gesehen.json');
 const DOSSIERS = path.join(WURZEL, 'dossiers');
 
-async function fixturesSammeln(cfg) {
+// Was ein echter Scan abfragen würde (nur Adressen und Suchtexte, nie Token).
+export function geplanteAbfragen(cfg, quellen, jetzt = Date.now()) {
+  const z = [];
+  const dran = (k) => !quellen || quellen.includes(k);
+  if (dran('gh')) z.push(`github: Suche je Sprache (${(cfg.sprachen || []).join(', ') || '–'}) über die REST-Suche`);
+  if (dran('so')) z.push(`stackoverflow: Fragen ohne Antwort je Tag (${(cfg.stackoverflow?.tags || []).join(', ') || '–'})`);
+  if (dran('dc')) z.push(`discourse: ${(cfg.discourse?.foren || []).map((f) => f.host).join(', ') || 'keine Foren eingestellt'}`);
+  if (dran('gd')) {
+    const q = planeGd(cfg, jetzt);
+    z.push(q.length ? `github-discussions: POST ${GRAPHQL}, ${q.length} Suche(n), je bis zu ${cfg.githubDiscussions?.maxSeiten ?? 3} Seite(n):` : 'github-discussions: nichts eingestellt (githubDiscussions.repos oder .suche) – keine Abfrage');
+    z.push(...q.map((s) => `    ${s}`));
+  }
+  if (dran('gl')) {
+    const q = planeGl(cfg, jetzt);
+    z.push(q.length ? `gitlab: ${q.length} Abfrage(n) bei gitlab.com, je bis zu ${cfg.gitlab?.maxSeiten ?? 3} Seite(n):` : 'gitlab: nichts eingestellt (gitlab.projekte oder .suche) – keine Abfrage');
+    z.push(...q.map((s) => `    ${s}`));
+  }
+  return z;
+}
+
+async function fixturesSammeln(cfg, quellen) {
   const lies = async (n) => JSON.parse(await readFile(path.join(WURZEL, 'test/fixtures', n), 'utf8'));
   const repo = parseRepo(await lies('github-repo.json'));
   const gh = parseIssues(await lies('github-search.json'), { sprache: 'javascript' }).map((t) => ({ ...t, wirkungRoh: repo }));
   const so = parseFragen(await lies('stackoverflow-no-answers.json'));
   const dc = parseThemen(await lies('discourse-search.json'), cfg.discourse.foren[0] || { host: 'discuss.python.org', sprache: 'python', gewicht: 60 });
-  return { treffer: [...gh, ...so, ...dc], fehler: [], ausgefallen: [] };
+  // Alterfenster weit offen: die Fixtures tragen feste Daten.
+  const offen = { ...cfg, alterTage: { min: 0, max: 1e6 }, githubDiscussions: {}, gitlab: {} };
+  const gd = parseDiskussionen(await lies('github-discussions.json'), { cfg: offen }).treffer;
+  const gl = parseGitlab(await lies('gitlab-issues.json'), { cfg: offen }).treffer;
+  const alle = { gh, so, dc, gd, gl };
+  const treffer = Object.entries(alle).filter(([k]) => !quellen || quellen.includes(k)).flatMap(([, v]) => v);
+  return { treffer, fehler: [], ausgefallen: [] };
 }
 
 async function scan(o, cfg) {
   const log = (s) => process.stderr.write(`  · ${s}\n`);
-  const { treffer, fehler, ausgefallen } = o.dryRun ? await fixturesSammeln(cfg) : await sammle(cfg, { quellen: o.quellen || undefined, log });
+  if (o.dryRun) for (const z of geplanteAbfragen(cfg, o.quellen)) log(`dry-run: ${z}`);
+  const { treffer, fehler, ausgefallen } = o.dryRun ? await fixturesSammeln(cfg, o.quellen) : await sammle(cfg, { quellen: o.quellen || undefined, log });
   const bewertet = sortiere(treffer.filter((t) => !ausgeschlossen(t, cfg.ausschluss)).map((t) => bewerte(t, cfg)));
   const gesehen = await ladeGesehen(GESEHEN);
   const neu = verteile(o.alle ? bewertet : nurNeue(bewertet, gesehen), cfg.maxProOrt ?? 3);

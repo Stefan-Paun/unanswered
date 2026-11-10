@@ -10,6 +10,9 @@ Zwei weitere Quellen für das Radar: `github-discussions` (Kürzel `gd`; Q&A-Dis
 4. **Einbindung**: `QUELLEN` (`gd`, `gl`), Config-Standardwerte, CLI (`--quellen`, `--dry-run` zeigt Abfragen), Bericht (Kürzel, Farbe, nur `https:` verlinkt), Dossier-Checkliste.
 5. **Doku**: README-Quellentabelle, Testzahl, Plan auf Endstand.
 
+## Stand
+Alle fünf Etappen erledigt; `npm test` grün (66 Tests). Nicht gegen die echten Schnittstellen geprüft (nur Fixtures): Form der GraphQL-Suche (`is:unanswered`, `created:`) und `x-next-page`/`user_notes_count` sind nach Dokumentation gebaut.
+
 ## Tests
 Alles mit Fixtures und Attrappen für `fetch`/Schlafen, keine echten Anfragen. Pro Quelle: Normalfall, mehrere Seiten, Ratenlimit, Fehlerantwort, unerwartete Felder, fehlender Token, stabile Kennungen, Token nie in Ausgaben, Maskierung im Bericht.
 
