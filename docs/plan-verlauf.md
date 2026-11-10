@@ -25,3 +25,8 @@ Ergänzungen in `test/cli.test.mjs`. Speicherordner immer im Temp, keine Netzanf
 Benachrichtigungen, aktive Nachfrage bei den Quellen („ist das noch offen?“), neue Abhängigkeiten.
 Die Suchen liefern nur noch Offenes; „sicher gelöst“ entsteht, wenn ein Fund mit Zustand
 `beantwortet`/`geschlossen` oder mit Antworten/Kommentaren wieder auftaucht.
+
+## Stand
+Alle fünf Etappen sind umgesetzt. Offen/bewusst weggelassen: Markdown-Bericht ohne Verlauf-Abschnitte,
+kein aktives Nachfragen bei den Quellen. Die Echtlauf-Pfade der Quellen sind nur über Fixtures und
+einen netzlosen Scan (`--quellen dc` ohne Foren) getestet.

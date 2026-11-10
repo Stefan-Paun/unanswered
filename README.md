@@ -36,10 +36,27 @@ Zwei Zahlen 0–100, Gesamt = √(Lösbarkeit × Wirkung).
 
 Pro Repo oder Forum stehen höchstens drei Treffer vorne (`maxProOrt`), damit ein großes Projekt nicht die ganze Liste füllt. Was schon einmal gezeigt wurde, landet in `data/gesehen.json` und erscheint beim nächsten Scan nicht mehr (`--alle` zeigt alles, Einträge älter als 120 Tage werden vergessen).
 
+## Verlauf über Scans
+
+Das Radar erinnert sich: `data/gesehen.json` (Speicher v2) hält je Fund bis zu 30 Messpunkte (Zeit, Kommentare, Stimmen/Reaktionen, Zustand, Bewertung; ältere werden ausgedünnt) und die Liste der Scans. Das alte Format (`{id: Zeitstempel}`) wird beim Laden verlustfrei angehoben, geschrieben wird atomar (temporäre Datei, dann umbenennen).
+
+| Kategorie | Bedeutung |
+|---|---|
+| neu | zum ersten Mal gesehen |
+| inzwischen gelöst | war offen, die Quelle meldet jetzt Antworten/Kommentare oder „geschlossen“ – nur das zählt als gelöst |
+| nicht mehr gefunden | taucht im Scan nicht mehr auf; **unsicher** (Filter, Ratenlimit), zählt nicht als gelöst |
+| wird wichtiger | Zuwachs an Stimmen + Kommentaren ≥ 1 je Tag, Messpunkte mindestens 12 Stunden auseinander |
+| liegt lange | seit 5 Scans unverändert offen und Bewertung ≥ 60 |
+
+Dazu eine Trefferliste: wie viele Funde, die einmal in den Top 10 waren, andere gelöst haben und nach wie vielen Tagen im Mittel. Im HTML-Bericht stehen die Abschnitte über der Tabelle, je Fund mit Verlaufslinie (statisches SVG) und Abzeichen; beim allerersten Scan steht stattdessen ein Hinweis. Ein Scan mit `--quellen` oder mit ausgefallener Quelle wertet Funde der nicht (vollständig) gescannten Quellen nie als verschwunden. Schwellen lassen sich in der Config unter `verlauf` ändern (`steigtProTag`, `minAbstandTage`, `langeScans`, `langeBewertung`, `maxPunkte`).
+
+Grenze: Die Suchen liefern nur noch Offenes. „Sicher gelöst“ entsteht daher nur, wenn ein Fund mit Antworten, Kommentaren oder Zustand `geschlossen` wieder auftaucht; ein aktives Nachfragen je Fund gibt es nicht.
+
 ## Befehle
 
 ```
 scan [--quellen gh,so,dc] [--top n] [--alle] [--html p] [--md p] [--json p] [--dry-run]
+verlauf [--json]  Veränderungen aus dem Speicher (kein Scan, schreibt nichts)
 list              alle Treffer des letzten Scans
 show <id>         Steckbrief in der Konsole
 dossier <id>      Steckbrief nach dossiers/<id>.md schreiben
@@ -65,9 +82,9 @@ IDs sehen so aus: `gh:owner/repo#123`, `so:80005138`, `dc:discuss.python.org/109
 ## Entwickeln
 
 ```sh
-node --test test/*.test.mjs      # 35 Tests, laufen ohne Netz (Fixtures in test/fixtures)
+node --test test/*.test.mjs      # 58 Tests, laufen ohne Netz (Fixtures in test/fixtures)
 ```
 
-Module: `lib/sources/{github,stackoverflow,discourse}.mjs` (je eine reine `parse*`-Funktion plus `suche*` mit injizierbarem `fetch`), `lib/normalize.mjs`, `lib/score.mjs`, `lib/store.mjs`, `lib/report/{summary,html,markdown}.mjs`, `lib/dossier.mjs`.
+Module: `lib/sources/{github,stackoverflow,discourse}.mjs` (je eine reine `parse*`-Funktion plus `suche*` mit injizierbarem `fetch`), `lib/normalize.mjs`, `lib/score.mjs`, `lib/store.mjs`, `lib/verlauf-speicher.mjs` (Speicher v2), `lib/verlauf.mjs` (Auswertung), `lib/report/{summary,html,markdown,verlauf}.mjs`, `lib/dossier.mjs`.
 
 MIT
