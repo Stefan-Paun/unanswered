@@ -77,9 +77,10 @@ function parseArgs(argv) {
     o.befehl = rest[0];
     o.id = rest[1] || null;
   }
-  if (o.quellen && !o.quellen.length) throw new Error('--quellen braucht mindestens eine Quelle (gh, so, dc, gd, gl)');
-  const fremd = (o.quellen || []).filter((q) => !['gh', 'so', 'dc', 'gd', 'gl'].includes(q));
-  if (fremd.length) throw new Error(`Unbekannte Quelle ${fremd.join(', ')} (erlaubt: gh, so, dc, gd, gl)`);
+  if (o.quellen && !o.quellen.length) throw new Error(`--quellen braucht mindestens eine Quelle (${Object.keys(QUELLEN).join(', ')})`);
+  const kuerzel = Object.keys(QUELLEN); // eine Liste für alle Quellen: neue Kürzel müssen hier nie nachgetragen werden
+  const fremd = (o.quellen || []).filter((q) => !kuerzel.includes(q));
+  if (fremd.length) throw new Error(`Unbekannte Quelle ${fremd.join(', ')} (erlaubt: ${kuerzel.join(', ')})`);
   if (o.jsonFlag && o.befehl !== 'verlauf') throw new Error('Option --json braucht einen Wert');
   if (['scan', 'list', 'verlauf'].includes(o.befehl) && o.id) throw new Error(`${o.befehl} nimmt kein weiteres Argument (${o.id})`);
   if (o.top != null && !(Number.isInteger(o.top) && o.top > 0)) throw new Error('--top braucht eine ganze Zahl > 0');
