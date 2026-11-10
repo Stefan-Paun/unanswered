@@ -76,3 +76,9 @@ test('Dossier: Checkliste je Quelle, Stack-Overflow-Regel, Dateiname sicher', ()
   const crlf = dossierText({ ...t, text: 'zeile1\r\nzeile2' });
   assert.ok(crlf.includes('> zeile1\n> zeile2'), 'CRLF wird zu einfachen Zitatzeilen');
 });
+
+test('HTML: nur https-Adressen werden verlinkt', async () => {
+  const { sichereUrl } = await import('../lib/report/html.mjs');
+  assert.equal(sichereUrl('https://gitlab.com/a/b/-/issues/1'), 'https://gitlab.com/a/b/-/issues/1');
+  for (const u of ['http://example.com/x', 'javascript:alert(1)', 'data:text/html,x', '//evil.example', '']) assert.equal(sichereUrl(u), '#');
+});
