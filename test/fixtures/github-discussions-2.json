@@ -1,0 +1,92 @@
+{
+ "data": {
+  "search": {
+   "pageInfo": {
+    "hasNextPage": false,
+    "endCursor": "CURSOR2"
+   },
+   "nodes": [
+    {
+     "number": 21,
+     "title": "<script>alert(1)</script> Absturz bei leerer Eingabe",
+     "url": "https://github.com/acme/tools/discussions/21",
+     "createdAt": "2026-10-09T10:00:00Z",
+     "body": "Beim Start kommt TypeError: x is not a function.\n```js\nconst a = f();\n```\nWas mache ich falsch? Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. ",
+     "closed": false,
+     "locked": false,
+     "isAnswered": false,
+     "answer": null,
+     "upvoteCount": 2,
+     "category": {
+      "name": "Q&A",
+      "isAnswerable": true
+     },
+     "comments": {
+      "totalCount": 1
+     },
+     "reactions": {
+      "totalCount": 3
+     },
+     "labels": {
+      "nodes": [
+       {
+        "name": "help wanted"
+       }
+      ]
+     },
+     "repository": {
+      "nameWithOwner": "acme/tools",
+      "isArchived": false,
+      "isFork": false,
+      "stargazerCount": 1200,
+      "forkCount": 80,
+      "primaryLanguage": {
+       "name": "TypeScript"
+      }
+     }
+    },
+    {
+     "number": 22,
+     "title": "Ohne Stimmen und Sterne",
+     "url": "https://github.com/acme/tools/discussions/22",
+     "createdAt": "2026-10-09T10:00:00Z",
+     "body": "Beim Start kommt TypeError: x is not a function.\n```js\nconst a = f();\n```\nWas mache ich falsch? Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. ",
+     "closed": false,
+     "locked": false,
+     "isAnswered": false,
+     "answer": null,
+     "upvoteCount": null,
+     "category": {
+      "name": "Q&A",
+      "isAnswerable": true
+     },
+     "comments": {
+      "totalCount": 1
+     },
+     "reactions": {
+      "totalCount": 3
+     },
+     "labels": {
+      "nodes": [
+       {
+        "name": "question"
+       }
+      ]
+     },
+     "repository": {
+      "nameWithOwner": "acme/tools",
+      "isArchived": false,
+      "isFork": false,
+      "stargazerCount": null,
+      "forkCount": null,
+      "primaryLanguage": null
+     }
+    },
+    {
+     "number": "x",
+     "title": 5
+    }
+   ]
+  }
+ }
+}

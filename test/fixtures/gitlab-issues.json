@@ -1,0 +1,148 @@
+[
+ {
+  "id": 9001,
+  "iid": 1,
+  "project_id": 77,
+  "title": "Crash beim Start mit leerer Config",
+  "description": "Beim Start: Traceback (most recent call last)\n```py\nrun()\n```\nKann das jemand nachstellen? Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. ",
+  "state": "opened",
+  "created_at": "2026-10-10T08:00:00.000Z",
+  "labels": [
+   "bug",
+   "help wanted"
+  ],
+  "user_notes_count": 0,
+  "upvotes": 2,
+  "confidential": false,
+  "assignees": [],
+  "web_url": "https://gitlab.com/acme/gitlab-demo/-/issues/1",
+  "references": {
+   "short": "#1",
+   "relative": "#1",
+   "full": "acme/gitlab-demo#1"
+  }
+ },
+ {
+  "id": 9002,
+  "iid": 2,
+  "project_id": 77,
+  "title": "Mit Kommentar",
+  "description": "Beim Start: Traceback (most recent call last)\n```py\nrun()\n```\nKann das jemand nachstellen? Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. ",
+  "state": "opened",
+  "created_at": "2026-10-10T08:00:00.000Z",
+  "labels": [
+   "bug",
+   "help wanted"
+  ],
+  "user_notes_count": 3,
+  "upvotes": 2,
+  "confidential": false,
+  "assignees": [],
+  "web_url": "https://gitlab.com/acme/gitlab-demo/-/issues/2",
+  "references": {
+   "short": "#2",
+   "relative": "#2",
+   "full": "acme/gitlab-demo#2"
+  }
+ },
+ {
+  "id": 9003,
+  "iid": 3,
+  "project_id": 77,
+  "title": "Geschlossen",
+  "description": "Beim Start: Traceback (most recent call last)\n```py\nrun()\n```\nKann das jemand nachstellen? Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. ",
+  "state": "closed",
+  "created_at": "2026-10-10T08:00:00.000Z",
+  "labels": [
+   "bug",
+   "help wanted"
+  ],
+  "user_notes_count": 0,
+  "upvotes": 2,
+  "confidential": false,
+  "assignees": [],
+  "web_url": "https://gitlab.com/acme/gitlab-demo/-/issues/3",
+  "references": {
+   "short": "#3",
+   "relative": "#3",
+   "full": "acme/gitlab-demo#3"
+  }
+ },
+ {
+  "id": 9004,
+  "iid": 4,
+  "project_id": 77,
+  "title": "Vertraulich",
+  "description": "Beim Start: Traceback (most recent call last)\n```py\nrun()\n```\nKann das jemand nachstellen? Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. ",
+  "state": "opened",
+  "created_at": "2026-10-10T08:00:00.000Z",
+  "labels": [
+   "bug",
+   "help wanted"
+  ],
+  "user_notes_count": 0,
+  "upvotes": 2,
+  "confidential": true,
+  "assignees": [],
+  "web_url": "https://gitlab.com/acme/gitlab-demo/-/issues/4",
+  "references": {
+   "short": "#4",
+   "relative": "#4",
+   "full": "acme/gitlab-demo#4"
+  }
+ },
+ {
+  "id": 9005,
+  "iid": 5,
+  "project_id": 77,
+  "title": "Zugewiesen",
+  "description": "Beim Start: Traceback (most recent call last)\n```py\nrun()\n```\nKann das jemand nachstellen? Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. ",
+  "state": "opened",
+  "created_at": "2026-10-10T08:00:00.000Z",
+  "labels": [
+   "bug",
+   "help wanted"
+  ],
+  "user_notes_count": 0,
+  "upvotes": 2,
+  "confidential": false,
+  "assignees": [
+   {
+    "id": 1
+   }
+  ],
+  "web_url": "https://gitlab.com/acme/gitlab-demo/-/issues/5",
+  "references": {
+   "short": "#5",
+   "relative": "#5",
+   "full": "acme/gitlab-demo#5"
+  }
+ },
+ {
+  "id": 9006,
+  "iid": 6,
+  "project_id": 77,
+  "title": "Fremde Adresse",
+  "description": "Beim Start: Traceback (most recent call last)\n```py\nrun()\n```\nKann das jemand nachstellen? Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. Mehr Text. ",
+  "state": "opened",
+  "created_at": "2026-10-10T08:00:00.000Z",
+  "labels": [
+   "bug",
+   "help wanted"
+  ],
+  "user_notes_count": 0,
+  "upvotes": 2,
+  "confidential": false,
+  "assignees": [],
+  "web_url": "https://gitlab.example.org/x/-/issues/6",
+  "references": {
+   "short": "#6",
+   "relative": "#6",
+   "full": "acme/gitlab-demo#6"
+  }
+ },
+ "kaputt",
+ {
+  "iid": "x"
+ }
+]

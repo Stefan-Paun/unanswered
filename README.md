@@ -12,10 +12,10 @@ Jeden Tag bleiben tausende Bug-Reports und Fragen unbeantwortet: GitHub-Issues o
 git clone https://github.com/Stefan-Paun/ungeloest && cd ungeloest
 node bin/ungeloest.mjs scan --html bericht.html     # echter Scan (braucht Node 20+)
 node bin/ungeloest.mjs dossier so:80005138           # Steckbrief zu einem Treffer
-node bin/ungeloest.mjs scan --dry-run --alle         # ohne Netz, mit Beispieldaten
+node bin/ungeloest.mjs scan --dry-run --alle         # ohne Netz, mit Beispieldaten; zeigt auch, was abgefragt würde
 ```
 
-Keine Abhängigkeiten. GitHub-Token kommt automatisch aus `gh auth token` oder `GITHUB_TOKEN` (ohne Token geht es langsamer). Optional `STACKAPPS_KEY` für 10 000 statt 300 Stack-Overflow-Anfragen pro Tag.
+Keine Abhängigkeiten. GitHub-Token kommt automatisch aus `gh auth token` oder `GITHUB_TOKEN` (ohne Token geht es langsamer). Optional `GITLAB_TOKEN` für GitLab. Optional `STACKAPPS_KEY` für 10 000 statt 300 Stack-Overflow-Anfragen pro Tag.
 
 ## Quellen
 
@@ -24,6 +24,19 @@ Keine Abhängigkeiten. GitHub-Token kommt automatisch aus `gh auth token` oder `
 | GitHub | offene Issues, 0 Kommentare, niemand zugewiesen, Label `bug`, Sprache aus Config, Repo ≥ 20 Sterne | REST-Suche, 30 Anfragen/min werden eingehalten |
 | Stack Overflow | Fragen ohne Antwort je Tag | Stack Exchange API, Quota wird aus jeder Antwort gelesen |
 | Discourse-Foren | Themen ohne Antwort (`status:noreplies`) | `search.json` jedes Forums aus der Config |
+| GitHub Discussions (`gd`) | Diskussionen in beantwortbaren Kategorien (Q&A) ohne gewählte Antwort, offen, nicht gesperrt; Filter: Repo-Liste, Suchbegriff, Alter, Mindest-Reaktionen | GraphQL (`api.github.com/graphql`), braucht einen Token (derselbe wie bei GitHub; ohne Token klare Meldung), Cursor-Seiten bis `maxSeiten` |
+| GitLab (`gl`) | offene Issues auf gitlab.com ohne Kommentare von anderen (`user_notes_count` 0), nicht zugewiesen, nicht vertraulich; Filter: Projekt-Liste, Suchbegriff, Labels | REST `gitlab.com/api/v4`, Adresse fest (kein Token an fremde Hosts, keine selbst gehosteten Instanzen); Token optional über `GITLAB_TOKEN`, ohne nur öffentliche Daten; Seiten über `x-next-page` |
+
+Beide neuen Quellen fragen **nichts ab**, solange in der Config weder Repos/Projekte noch ein Suchbegriff stehen:
+
+```json
+{ "githubDiscussions": { "repos": ["owner/repo"], "suche": "", "minReaktionen": 0, "minSterne": 0, "maxSeiten": 3, "proSeite": 50 },
+  "gitlab": { "projekte": ["gruppe/projekt"], "suche": "", "labels": ["bug"], "minSterne": 0, "maxSeiten": 3, "proSeite": 50 } }
+```
+
+Beide beachten die Ratenlimit-Kopfzeilen: kurze Sperren (bis 60 s) werden abgewartet, längere beenden die Quelle sauber und liefern die bis dahin geladene Teilmenge samt Hinweis. Je Anfrage gilt ein Zeitlimit (20 s); wiederholt wird nur bei 5xx, Netzfehler und Zeitlimit. Kaputte oder unerwartete Antworten werden als Warnung gemeldet und übersprungen. Suche über alle GitLab-Projekte (ohne `projekte`) geht nur mit Token. Mehrere GitLab-Labels sind ODER-verknüpft (eine Abfrage je Label). Fremdtexte werden gekürzt (Titel 300, Text 8000 Zeichen), im HTML-Bericht maskiert und nur mit `https:` verlinkt.
+
+Ersatzgrößen in der Bewertung: GitHub-Diskussionen nutzen Sterne und Forks des Repos aus derselben Antwort; Reaktionen und Stimmen (`upvoteCount`) zählen wie bei GitHub-Issues (höchstens +20). GitLab-Issues tragen keine Sterne; sie werden einmal je Projekt in `projekte` nachgeladen. Fehlen Sterne, gilt eine Basiswirkung von 30; fehlende Stimmen zählen 0.
 
 Reddit ist bewusst nicht dabei: Das Subreddit-RSS trägt keine Kommentarzahl, und das RSS je Beitrag antwortet ohne Login sofort mit 429. Dafür bräuchte es eine OAuth-App.
 
@@ -39,17 +52,17 @@ Pro Repo oder Forum stehen höchstens drei Treffer vorne (`maxProOrt`), damit ei
 ## Befehle
 
 ```
-scan [--quellen gh,so,dc] [--top n] [--alle] [--html p] [--md p] [--json p] [--dry-run]
+scan [--quellen gh,so,dc,gd,gl] [--top n] [--alle] [--html p] [--md p] [--json p] [--dry-run]
 list              alle Treffer des letzten Scans
 show <id>         Steckbrief in der Konsole
 dossier <id>      Steckbrief nach dossiers/<id>.md schreiben
 ```
 
-IDs sehen so aus: `gh:owner/repo#123`, `so:80005138`, `dc:discuss.python.org/109464`. `show`/`dossier` verstehen auch Kurzformen hinter einem Trenner (`#123`, `80005138`) und melden Mehrdeutigkeit. Ein vorhandenes Dossier wird nur mit `--force` überschrieben. Fällt eine Quelle komplett aus, bleibt der letzte Scan erhalten und der Exit-Code ist 2. `UNGELOEST_DATEN` verlegt den Zustandsordner.
+IDs sehen so aus: `gh:owner/repo#123`, `gd:owner/repo#45` (Discussion), `gl:gruppe/projekt#7`, `so:80005138`, `dc:discuss.python.org/109464`. `show`/`dossier` verstehen auch Kurzformen hinter einem Trenner (`#123`, `80005138`) und melden Mehrdeutigkeit. Ein vorhandenes Dossier wird nur mit `--force` überschrieben. Fällt eine Quelle komplett aus, bleibt der letzte Scan erhalten und der Exit-Code ist 2. `UNGELOEST_DATEN` verlegt den Zustandsordner.
 
 ## Config
 
-`ungeloest.config.json`: Sprachen, Alter, GitHub-Labels und Mindest-Sterne, Stack-Overflow-Tags, Foren mit Gewicht, Ausschluss-Muster für Titel (Ankündigungen, PEPs, Review-Requests) und Repos.
+`ungeloest.config.json`: Sprachen, Alter, GitHub-Labels und Mindest-Sterne, Stack-Overflow-Tags, Foren mit Gewicht, `githubDiscussions` und `gitlab` (siehe Quellen), Ausschluss-Muster für Titel (Ankündigungen, PEPs, Review-Requests) und Repos.
 
 ## Ablauf, der funktioniert
 
@@ -65,9 +78,9 @@ IDs sehen so aus: `gh:owner/repo#123`, `so:80005138`, `dc:discuss.python.org/109
 ## Entwickeln
 
 ```sh
-node --test test/*.test.mjs      # 35 Tests, laufen ohne Netz (Fixtures in test/fixtures)
+node --test test/*.test.mjs      # 66 Tests, laufen ohne Netz (Fixtures in test/fixtures)
 ```
 
-Module: `lib/sources/{github,stackoverflow,discourse}.mjs` (je eine reine `parse*`-Funktion plus `suche*` mit injizierbarem `fetch`), `lib/normalize.mjs`, `lib/score.mjs`, `lib/store.mjs`, `lib/report/{summary,html,markdown}.mjs`, `lib/dossier.mjs`.
+Module: `lib/sources/{github,stackoverflow,discourse,github-discussions,gitlab}.mjs` (je eine reine `parse*`-Funktion plus `suche*` mit injizierbarem `fetch`), `lib/abruf.mjs` (gemeinsamer Abruf mit Zeitlimit, Wiederholung, Ratenlimit, Token-Schwärzung), `lib/normalize.mjs`, `lib/score.mjs`, `lib/store.mjs`, `lib/report/{summary,html,markdown}.mjs`, `lib/dossier.mjs`.
 
 MIT

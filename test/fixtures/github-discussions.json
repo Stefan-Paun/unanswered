@@ -1,0 +1,248 @@
+{
+ "data": {
+  "search": {
+   "pageInfo": {
+    "hasNextPage": true,
+    "endCursor": "CURSOR1"
+   },
+   "nodes": [
+    {
+     "number": 11,
+     "title": "Build bricht mit TypeError ab",
+     "url": "https://github.com/acme/widgets/discussions/11",
+     "createdAt": "2026-10-10T10:00:00Z",
+     "body": "Beim Start kommt TypeError: x is not a function.\n```js\nconst a = f();\n```\nWas mache ich falsch? Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. ",
+     "closed": false,
+     "locked": false,
+     "isAnswered": false,
+     "answer": null,
+     "upvoteCount": 2,
+     "category": {
+      "name": "Q&A",
+      "isAnswerable": true
+     },
+     "comments": {
+      "totalCount": 1
+     },
+     "reactions": {
+      "totalCount": 3
+     },
+     "labels": {
+      "nodes": [
+       {
+        "name": "question"
+       }
+      ]
+     },
+     "repository": {
+      "nameWithOwner": "acme/widgets",
+      "isArchived": false,
+      "isFork": false,
+      "stargazerCount": 1200,
+      "forkCount": 80,
+      "primaryLanguage": {
+       "name": "TypeScript"
+      }
+     }
+    },
+    {
+     "number": 12,
+     "title": "Plugin lädt nicht unter Windows",
+     "url": "https://github.com/acme/widgets/discussions/12",
+     "createdAt": "2026-10-12T10:00:00Z",
+     "body": "Beim Start kommt TypeError: x is not a function.\n```js\nconst a = f();\n```\nWas mache ich falsch? Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. ",
+     "closed": false,
+     "locked": false,
+     "isAnswered": false,
+     "answer": null,
+     "upvoteCount": 0,
+     "category": {
+      "name": "Q&A",
+      "isAnswerable": true
+     },
+     "comments": {
+      "totalCount": 1
+     },
+     "reactions": {
+      "totalCount": 0
+     },
+     "labels": {
+      "nodes": [
+       {
+        "name": "question"
+       }
+      ]
+     },
+     "repository": {
+      "nameWithOwner": "acme/widgets",
+      "isArchived": false,
+      "isFork": false,
+      "stargazerCount": 1200,
+      "forkCount": 80,
+      "primaryLanguage": {
+       "name": "TypeScript"
+      }
+     }
+    },
+    {
+     "number": 13,
+     "title": "Schon beantwortet",
+     "url": "https://github.com/acme/widgets/discussions/13",
+     "createdAt": "2026-10-12T10:00:00Z",
+     "body": "Beim Start kommt TypeError: x is not a function.\n```js\nconst a = f();\n```\nWas mache ich falsch? Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. ",
+     "closed": false,
+     "locked": false,
+     "isAnswered": true,
+     "answer": {
+      "id": "DC_x"
+     },
+     "upvoteCount": 2,
+     "category": {
+      "name": "Q&A",
+      "isAnswerable": true
+     },
+     "comments": {
+      "totalCount": 1
+     },
+     "reactions": {
+      "totalCount": 3
+     },
+     "labels": {
+      "nodes": [
+       {
+        "name": "question"
+       }
+      ]
+     },
+     "repository": {
+      "nameWithOwner": "acme/widgets",
+      "isArchived": false,
+      "isFork": false,
+      "stargazerCount": 1200,
+      "forkCount": 80,
+      "primaryLanguage": {
+       "name": "TypeScript"
+      }
+     }
+    },
+    {
+     "number": 14,
+     "title": "Ideen für 2027",
+     "url": "https://github.com/acme/widgets/discussions/14",
+     "createdAt": "2026-10-12T10:00:00Z",
+     "body": "Beim Start kommt TypeError: x is not a function.\n```js\nconst a = f();\n```\nWas mache ich falsch? Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. ",
+     "closed": false,
+     "locked": false,
+     "isAnswered": false,
+     "answer": null,
+     "upvoteCount": 2,
+     "category": {
+      "name": "Ideas",
+      "isAnswerable": false
+     },
+     "comments": {
+      "totalCount": 1
+     },
+     "reactions": {
+      "totalCount": 3
+     },
+     "labels": {
+      "nodes": [
+       {
+        "name": "question"
+       }
+      ]
+     },
+     "repository": {
+      "nameWithOwner": "acme/widgets",
+      "isArchived": false,
+      "isFork": false,
+      "stargazerCount": 1200,
+      "forkCount": 80,
+      "primaryLanguage": {
+       "name": "TypeScript"
+      }
+     }
+    },
+    {
+     "number": 15,
+     "title": "Archiviertes Repo",
+     "url": "https://github.com/acme/archiv/discussions/15",
+     "createdAt": "2026-10-12T10:00:00Z",
+     "body": "Beim Start kommt TypeError: x is not a function.\n```js\nconst a = f();\n```\nWas mache ich falsch? Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. ",
+     "closed": false,
+     "locked": false,
+     "isAnswered": false,
+     "answer": null,
+     "upvoteCount": 2,
+     "category": {
+      "name": "Q&A",
+      "isAnswerable": true
+     },
+     "comments": {
+      "totalCount": 1
+     },
+     "reactions": {
+      "totalCount": 3
+     },
+     "labels": {
+      "nodes": [
+       {
+        "name": "question"
+       }
+      ]
+     },
+     "repository": {
+      "nameWithOwner": "acme/archiv",
+      "isArchived": true,
+      "isFork": false,
+      "stargazerCount": 5,
+      "forkCount": 0,
+      "primaryLanguage": null
+     }
+    },
+    {},
+    null,
+    {
+     "number": 16,
+     "title": "Kaputte Adresse",
+     "url": "javascript:alert(1)",
+     "createdAt": "2026-10-12T10:00:00Z",
+     "body": "Beim Start kommt TypeError: x is not a function.\n```js\nconst a = f();\n```\nWas mache ich falsch? Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. Mehr Kontext. ",
+     "closed": false,
+     "locked": false,
+     "isAnswered": false,
+     "answer": null,
+     "upvoteCount": 2,
+     "category": {
+      "name": "Q&A",
+      "isAnswerable": true
+     },
+     "comments": {
+      "totalCount": 1
+     },
+     "reactions": {
+      "totalCount": 3
+     },
+     "labels": {
+      "nodes": [
+       {
+        "name": "question"
+       }
+      ]
+     },
+     "repository": {
+      "nameWithOwner": "acme/widgets",
+      "isArchived": false,
+      "isFork": false,
+      "stargazerCount": 1200,
+      "forkCount": 80,
+      "primaryLanguage": {
+       "name": "TypeScript"
+      }
+     }
+    }
+   ]
+  }
+ }
+}

@@ -44,3 +44,12 @@ test('verteile lässt höchstens n pro Ort nach vorne, Rest hinten in Reihenfolg
   const so = Array.from({ length: 5 }, (_, i) => ({ quelle: 'stackoverflow', ort: 'stackoverflow.com', id: `so:${i}`, g: i }));
   assert.deepEqual(verteile(so, 3).map((x) => x.g), [0, 1, 2, 3, 4], 'Stack Overflow wird nicht gedeckelt');
 });
+
+test('Wirkung: Discussions und GitLab – Ersatzgröße ohne Sterne, Stimmen zählen', async () => {
+  const { wirkung, ERSATZ_WIRKUNG } = await import('../lib/score.mjs');
+  assert.equal(ERSATZ_WIRKUNG, 30);
+  assert.equal(wirkung({ quelle: 'gitlab', wirkungRoh: {} }), 30);
+  assert.equal(wirkung({ quelle: 'github-discussions', wirkungRoh: { reaktionen: 2, stimmen: 1 } }), 42);
+  assert.ok(wirkung({ quelle: 'gitlab', wirkungRoh: { sterne: 9999 } }) > 70);
+  assert.equal(wirkung({ quelle: 'github-discussions', wirkungRoh: { sterne: 9999, archiviert: true } }), 0);
+});
