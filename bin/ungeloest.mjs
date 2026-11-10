@@ -10,7 +10,11 @@ import { parseDiskussionen, planeAnfragen as planeGd, GRAPHQL } from '../lib/sou
 import { parseIssues as parseGitlab, planeAnfragen as planeGl } from '../lib/sources/gitlab.mjs';
 import { ausgeschlossen } from '../lib/normalize.mjs';
 import { bewerte, sortiere, verteile } from '../lib/score.mjs';
-import { ladeGesehen, speichereGesehen, nurNeue, merkeDir, auffrischen, vergesseAlte } from '../lib/store.mjs';
+import { nurNeue, gesehenAus } from '../lib/store.mjs';
+import { ladeSpeicher, speichereSpeicher, vergesseAlteFunde } from '../lib/verlauf-speicher.mjs';
+import { uebernimm, auswerten } from '../lib/verlauf.mjs';
+import { verlaufText } from '../lib/report/verlauf.mjs';
+import { QUELLEN } from '../lib/sources/index.mjs';
 import { toConsole } from '../lib/report/summary.mjs';
 import { toHtml } from '../lib/report/html.mjs';
 import { toMarkdown } from '../lib/report/markdown.mjs';
@@ -23,6 +27,7 @@ Befehle:
   show <id>            einen Treffer aus dem letzten Scan anzeigen
   dossier <id>         Steckbrief dossiers/<id>.md schreiben (Problem, Links, Checkliste; --force überschreibt)
   list                 alle Treffer des letzten Scans auflisten
+  verlauf [--json]     Veränderungen seit dem vorletzten Scan aus dem Speicher (neu, wird wichtiger, gelöst); schreibt nichts
 
 Optionen für scan:
   --quellen gh,so,dc,gd,gl  nur diese Quellen (Standard: alle; gd = GitHub Discussions, gl = GitLab; --quelle ist dasselbe)
@@ -30,7 +35,7 @@ Optionen für scan:
   --alle               auch schon gezeigte Treffer anzeigen
   --html <pfad>        HTML-Bericht schreiben (Dracula, ohne Script)
   --md <pfad>          Markdown-Liste schreiben
-  --json <pfad>        alle bewerteten Treffer als JSON schreiben
+  --json <pfad>        alle bewerteten Treffer als JSON schreiben (bei verlauf: Schalter ohne Pfad, JSON auf stdout)
   --dry-run            keine Netzanfragen, Fixtures aus test/fixtures nutzen, zeigt die geplanten Abfragen; schreibt keinen Zustand
   --config <pfad>      andere Config-Datei
   --force              bei dossier: vorhandene Datei überschreiben
@@ -42,7 +47,7 @@ Ablauf: scan → Liste lesen → dossier <id> → in Ruhe reproduzieren und lös
 `;
 
 function parseArgs(argv) {
-  const o = { befehl: 'scan', quellen: null, top: null, alle: false, html: null, md: null, json: null, dryRun: false, config: null, id: null, force: false };
+  const o = { befehl: 'scan', quellen: null, top: null, alle: false, html: null, md: null, json: null, dryRun: false, config: null, id: null, force: false, jsonFlag: false };
   const rest = [];
   let hilfe = false;
   for (let i = 0; i < argv.length; i++) {
@@ -54,7 +59,11 @@ function parseArgs(argv) {
     else if (a === '--alle') o.alle = true;
     else if (a === '--html') o.html = next();
     else if (a === '--md') o.md = next();
-    else if (a === '--json') o.json = next();
+    else if (a === '--json') {
+      // Bei `verlauf` ist --json ein Schalter ohne Pfad.
+      if (i + 1 >= argv.length || argv[i + 1].startsWith('-') || (argv[i + 1] === 'verlauf' && !rest.length)) o.jsonFlag = true;
+      else o.json = next();
+    }
     else if (a === '--dry-run') o.dryRun = true;
     else if (a === '--force') o.force = true;
     else if (a === '--config') o.config = next();
@@ -63,7 +72,7 @@ function parseArgs(argv) {
   }
   if (hilfe) return { ...o, befehl: 'help' };
   if (rest.length) {
-    if (!['scan', 'show', 'dossier', 'list'].includes(rest[0])) throw new Error(`Unbekannter Befehl ${rest[0]}`);
+    if (!['scan', 'show', 'dossier', 'list', 'verlauf'].includes(rest[0])) throw new Error(`Unbekannter Befehl ${rest[0]}`);
     if (rest.length > 2) throw new Error(`Zu viele Argumente: ${rest.slice(2).join(' ')}`);
     o.befehl = rest[0];
     o.id = rest[1] || null;
@@ -71,7 +80,8 @@ function parseArgs(argv) {
   if (o.quellen && !o.quellen.length) throw new Error('--quellen braucht mindestens eine Quelle (gh, so, dc, gd, gl)');
   const fremd = (o.quellen || []).filter((q) => !['gh', 'so', 'dc', 'gd', 'gl'].includes(q));
   if (fremd.length) throw new Error(`Unbekannte Quelle ${fremd.join(', ')} (erlaubt: gh, so, dc, gd, gl)`);
-  if (['scan', 'list'].includes(o.befehl) && o.id) throw new Error(`${o.befehl} nimmt kein weiteres Argument (${o.id})`);
+  if (o.jsonFlag && o.befehl !== 'verlauf') throw new Error('Option --json braucht einen Wert');
+  if (['scan', 'list', 'verlauf'].includes(o.befehl) && o.id) throw new Error(`${o.befehl} nimmt kein weiteres Argument (${o.id})`);
   if (o.top != null && !(Number.isInteger(o.top) && o.top > 0)) throw new Error('--top braucht eine ganze Zahl > 0');
   return o;
 }
@@ -121,24 +131,41 @@ async function scan(o, cfg) {
   if (o.dryRun) for (const z of geplanteAbfragen(cfg, o.quellen)) log(`dry-run: ${z}`);
   const { treffer, fehler, ausgefallen } = o.dryRun ? await fixturesSammeln(cfg, o.quellen) : await sammle(cfg, { quellen: o.quellen || undefined, log });
   const bewertet = sortiere(treffer.filter((t) => !ausgeschlossen(t, cfg.ausschluss)).map((t) => bewerte(t, cfg)));
-  const gesehen = await ladeGesehen(GESEHEN);
+  const speicher = await ladeSpeicher(GESEHEN);
+  const gesehen = gesehenAus(speicher);
   const neu = verteile(o.alle ? bewertet : nurNeue(bewertet, gesehen), cfg.maxProOrt ?? 3);
   const top = neu.slice(0, o.top || cfg.top || 20);
   if (ausgefallen.length) fehler.unshift(`Quelle(n) komplett ausgefallen: ${ausgefallen.join(', ')} – letzter Scan bleibt erhalten`);
   const meta = { when: new Date().toISOString().slice(0, 16).replace('T', ' '), gesamt: bewertet.length, neu: neu.length, fehler };
 
+  // Verlauf: Scan in den Speicher übernehmen (im Speicher, geschrieben wird erst unten) und mit dem vorigen vergleichen.
+  // Nur Quellen, die vollständig geantwortet haben, können Funde „verlieren“.
+  const alleNamen = o.dryRun || !o.quellen ? Object.values(QUELLEN).map((q) => q.name) : o.quellen.map((k) => QUELLEN[k].name);
+  const quellenOk = alleNamen.filter((n) => !ausgefallen.includes(n) && !fehler.some((f) => f.startsWith(n)));
+  const jetzt = new Date();
+  const topIds = verteile(bewertet, cfg.maxProOrt ?? 3).slice(0, 10).map((t) => t.id);
+  let neuerSpeicher = uebernimm(speicher, bewertet, { quellen: quellenOk, topIds, jetzt, cfg });
+  const verlauf = auswerten(neuerSpeicher, { cfg });
+
   // Erst zeigen, dann merken: was nie ausgegeben wurde, gilt nicht als gesehen.
-  if (o.html) await writeFile(o.html, toHtml(top, meta));
+  if (o.html) await writeFile(o.html, toHtml(top, meta, verlauf));
   if (o.md) await writeFile(o.md, toMarkdown(top, meta));
   if (o.json) await writeFile(o.json, JSON.stringify({ meta, treffer: bewertet }, null, 1));
   console.log(toConsole(top, meta));
+  console.log('\n' + verlaufText(verlauf));
   if (o.html) console.log(`HTML: ${path.resolve(o.html)}`);
 
   // Ein Trockenlauf schreibt keinen Zustand; bei einer komplett ausgefallenen Quelle bleibt der letzte Scan stehen.
   if (!o.dryRun && !ausgefallen.length) {
     await mkdir(DATEN, { recursive: true });
     await writeFile(LETZTER, JSON.stringify({ meta, treffer: bewertet }, null, 1));
-    await speichereGesehen(GESEHEN, vergesseAlte(auffrischen(merkeDir(top, gesehen), bewertet)));
+    // gezeigt = was ausgegeben wurde; wieder aufgetauchte, schon gezeigte Funde bekommen einen frischen Zeitstempel.
+    const iso = jetzt.toISOString();
+    const gezeigt = new Set(top.map((t) => t.id));
+    const funde = { ...neuerSpeicher.funde };
+    for (const t of bewertet) if (funde[t.id] && (gezeigt.has(t.id) || funde[t.id].gezeigt)) funde[t.id] = { ...funde[t.id], gezeigt: iso };
+    neuerSpeicher = vergesseAlteFunde({ ...neuerSpeicher, funde }, 120, jetzt.getTime());
+    await speichereSpeicher(GESEHEN, neuerSpeicher);
   }
   return fehler.length ? 2 : 0;
 }
@@ -168,6 +195,11 @@ async function main() {
   if (o.befehl === 'help') { process.stdout.write(HILFE); return 0; }
   const cfg = await ladeConfig(o.config || undefined);
   if (o.befehl === 'scan') return scan(o, cfg);
+  if (o.befehl === 'verlauf') {
+    const a = auswerten(await ladeSpeicher(GESEHEN), { cfg });
+    console.log(o.jsonFlag ? JSON.stringify(a, null, 1) : verlaufText(a));
+    return 0;
+  }
   const daten = await letzter();
   if (o.befehl === 'list') {
     console.log(toConsole(daten.treffer, { ...daten.meta, neu: daten.treffer.length }));
