@@ -19,7 +19,7 @@ const BOESE = [
   fund('gh:b/"onmouseover="x#2', 80, { titel: 'Zweiter & <img src=x onerror=y>', url: 'https://example.org/a b(c)<d>"e' }),
   fund('gh:c/c#3', 70, { titel: 'Dritter', url: 'javascript:alert(1)' }),
   fund('gh:d/d#4', 60, { titel: '</li><script>neu()</script>', url: 'data:text/html,x' }),
-  fund('gh:e/e#5', 50, { titel: 'Fünfter ](https://boese.example/) [x' }),
+  fund('gh:e/e#5', 50, { titel: 'Fünfter ](https://boese.example/) [x http://unsicher.example www.boese.example a@b.example' }),
 ];
 const digest = (mehr = {}) => baueDigest(BOESE, { jetzt: JETZT, scanZeit: SCAN, ...mehr });
 
@@ -75,6 +75,8 @@ test('Markdown: Datum, drei Chancen, außerdem neu; Fremdtext maskiert, Links nu
   for (const z of ziele) assert.match(z, /^https:\/\/example\.org\/[^\s()<>]*$/, z);
   assert.match(md, /^## 2\. Zweiter /m, 'Adresse mit Leerzeichen und Anführungszeichen wird gar nicht verlinkt');
   assert.ok(!md.includes('javascript:alert') && !md.includes('data:text'));
+  assert.ok(md.includes('http\\://unsicher.example www\\.boese.example a\\@b.example'), 'Renderer verlinken nichts von selbst');
+  assert.ok(!/(?<!\\):\/\/boese|(?<!\\)@/.test(md));
 });
 
 test('HTML: eine Seite ohne Script und ohne externe Verweise, hell/dunkel, alles maskiert', () => {

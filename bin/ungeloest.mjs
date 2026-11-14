@@ -11,7 +11,7 @@ import { parseIssues as parseGitlab, planeAnfragen as planeGl } from '../lib/sou
 import { ausgeschlossen } from '../lib/normalize.mjs';
 import { bewerte, sortiere, verteile } from '../lib/score.mjs';
 import { nurNeue, gesehenAus } from '../lib/store.mjs';
-import { ladeSpeicher, speichereSpeicher, vergesseAlteFunde } from '../lib/verlauf-speicher.mjs';
+import { ladeSpeicher, speichereSpeicher, vergesseAlteFunde, schreibeAtomar } from '../lib/verlauf-speicher.mjs';
 import { uebernimm, auswerten } from '../lib/verlauf.mjs';
 import { verlaufText } from '../lib/report/verlauf.mjs';
 import { QUELLEN } from '../lib/sources/index.mjs';
@@ -19,6 +19,8 @@ import { toConsole } from '../lib/report/summary.mjs';
 import { toHtml } from '../lib/report/html.mjs';
 import { toMarkdown } from '../lib/report/markdown.mjs';
 import { schreibeDossier, dossierText } from '../lib/dossier.mjs';
+import { baueDigest, merke, hebeMerklisteAn, leereMerkliste } from '../lib/digest.mjs';
+import { digestText, digestMarkdown, digestHtml } from '../lib/report/digest.mjs';
 
 const HILFE = `ungeloest – findet offene Fehler und Fragen, auf die noch niemand geantwortet hat
 
@@ -28,6 +30,14 @@ Befehle:
   dossier <id>         Steckbrief dossiers/<id>.md schreiben (Problem, Links, Checkliste; --force überschreibt)
   list                 alle Treffer des letzten Scans auflisten
   verlauf [--json]     Veränderungen seit dem vorletzten Scan aus dem Speicher (neu, wird wichtiger, gelöst); schreibt nichts
+  digest               die drei lohnendsten Funde des letzten gespeicherten Scans, je mit Begründung und Aufwand; fragt das Netz nicht ab
+
+Optionen für digest:
+  --frisch             vorher einen Scan machen (nur dann Netzanfragen; --quellen gilt für diesen Scan)
+  --md <pfad>          Markdown schreiben (Datum, die Chancen, „Außerdem neu“)
+  --html <pfad>        HTML-Karte schreiben (eine Seite, hell/dunkel, ohne Script)
+  --json [pfad]        JSON auf stdout statt Text, mit Pfad in eine Datei
+  --dry-run            Merkliste der gezeigten Funde nicht fortschreiben
 
 Optionen für scan:
   --quellen gh,so,dc,gd,gl  nur diese Quellen (Standard: alle; gd = GitHub Discussions, gl = GitLab; --quelle ist dasselbe)
@@ -41,13 +51,13 @@ Optionen für scan:
   --force              bei dossier: vorhandene Datei überschreiben
   -h, --help           diese Hilfe
 
-Zustand liegt in data/ (letzter Scan, Gesehen-Speicher); UNGELOEST_DATEN überschreibt den Ordner.
+Zustand liegt in data/ (letzter Scan, Gesehen-Speicher, Digest-Merkliste); UNGELOEST_DATEN überschreibt den Ordner.
 
 Ablauf: scan → Liste lesen → dossier <id> → in Ruhe reproduzieren und lösen → selbst posten.
 `;
 
 function parseArgs(argv) {
-  const o = { befehl: 'scan', quellen: null, top: null, alle: false, html: null, md: null, json: null, dryRun: false, config: null, id: null, force: false, jsonFlag: false };
+  const o = { befehl: 'scan', quellen: null, top: null, alle: false, html: null, md: null, json: null, dryRun: false, config: null, id: null, force: false, jsonFlag: false, frisch: false };
   const rest = [];
   let hilfe = false;
   for (let i = 0; i < argv.length; i++) {
@@ -60,11 +70,12 @@ function parseArgs(argv) {
     else if (a === '--html') o.html = next();
     else if (a === '--md') o.md = next();
     else if (a === '--json') {
-      // Bei `verlauf` ist --json ein Schalter ohne Pfad.
-      if (i + 1 >= argv.length || argv[i + 1].startsWith('-') || (argv[i + 1] === 'verlauf' && !rest.length)) o.jsonFlag = true;
+      // Bei `verlauf` und `digest` ist --json ein Schalter ohne Pfad (digest nimmt wahlweise einen Pfad).
+      if (i + 1 >= argv.length || argv[i + 1].startsWith('-') || (['verlauf', 'digest'].includes(argv[i + 1]) && !rest.length)) o.jsonFlag = true;
       else o.json = next();
     }
     else if (a === '--dry-run') o.dryRun = true;
+    else if (a === '--frisch') o.frisch = true;
     else if (a === '--force') o.force = true;
     else if (a === '--config') o.config = next();
     else if (a.startsWith('-')) throw new Error(`Unbekannte Option ${a}`);
@@ -72,7 +83,7 @@ function parseArgs(argv) {
   }
   if (hilfe) return { ...o, befehl: 'help' };
   if (rest.length) {
-    if (!['scan', 'show', 'dossier', 'list', 'verlauf'].includes(rest[0])) throw new Error(`Unbekannter Befehl ${rest[0]}`);
+    if (!['scan', 'show', 'dossier', 'list', 'verlauf', 'digest'].includes(rest[0])) throw new Error(`Unbekannter Befehl ${rest[0]}`);
     if (rest.length > 2) throw new Error(`Zu viele Argumente: ${rest.slice(2).join(' ')}`);
     o.befehl = rest[0];
     o.id = rest[1] || null;
@@ -81,8 +92,10 @@ function parseArgs(argv) {
   const kuerzel = Object.keys(QUELLEN); // eine Liste für alle Quellen: neue Kürzel müssen hier nie nachgetragen werden
   const fremd = (o.quellen || []).filter((q) => !kuerzel.includes(q));
   if (fremd.length) throw new Error(`Unbekannte Quelle ${fremd.join(', ')} (erlaubt: ${kuerzel.join(', ')})`);
-  if (o.jsonFlag && o.befehl !== 'verlauf') throw new Error('Option --json braucht einen Wert');
-  if (['scan', 'list', 'verlauf'].includes(o.befehl) && o.id) throw new Error(`${o.befehl} nimmt kein weiteres Argument (${o.id})`);
+  if (o.jsonFlag && !['verlauf', 'digest'].includes(o.befehl)) throw new Error('Option --json braucht einen Wert');
+  if (o.frisch && o.befehl !== 'digest') throw new Error('--frisch gibt es nur bei digest');
+  if (o.frisch && o.dryRun) throw new Error('--frisch und --dry-run schließen sich aus');
+  if (['scan', 'list', 'verlauf', 'digest'].includes(o.befehl) && o.id) throw new Error(`${o.befehl} nimmt kein weiteres Argument (${o.id})`);
   if (o.top != null && !(Number.isInteger(o.top) && o.top > 0)) throw new Error('--top braucht eine ganze Zahl > 0');
   return o;
 }
@@ -90,6 +103,7 @@ function parseArgs(argv) {
 const DATEN = process.env.UNGELOEST_DATEN ? path.resolve(process.env.UNGELOEST_DATEN) : path.join(WURZEL, 'data');
 const LETZTER = path.join(DATEN, 'letzter-scan.json');
 const GESEHEN = path.join(DATEN, 'gesehen.json');
+const MERKLISTE = 'digest.json';
 const DOSSIERS = path.join(WURZEL, 'dossiers');
 
 // Was ein echter Scan abfragen würde (nur Adressen und Suchtexte, nie Token).
@@ -127,7 +141,9 @@ async function fixturesSammeln(cfg, quellen) {
   return { treffer, fehler: [], ausgefallen: [] };
 }
 
-async function scan(o, cfg) {
+// fuerDigest: Scan als Vorstufe von `digest --frisch` – Zustand wird geschrieben, aber die Liste nicht ausgegeben
+// (stdout gehört dem Digest) und deshalb auch nichts als „gezeigt“ gemerkt.
+async function scan(o, cfg, { fuerDigest = false } = {}) {
   const log = (s) => process.stderr.write(`  · ${s}\n`);
   if (o.dryRun) for (const z of geplanteAbfragen(cfg, o.quellen)) log(`dry-run: ${z}`);
   const { treffer, fehler, ausgefallen } = o.dryRun ? await fixturesSammeln(cfg, o.quellen) : await sammle(cfg, { quellen: o.quellen || undefined, log });
@@ -137,13 +153,13 @@ async function scan(o, cfg) {
   const neu = verteile(o.alle ? bewertet : nurNeue(bewertet, gesehen), cfg.maxProOrt ?? 3);
   const top = neu.slice(0, o.top || cfg.top || 20);
   if (ausgefallen.length) fehler.unshift(`Quelle(n) komplett ausgefallen: ${ausgefallen.join(', ')} – letzter Scan bleibt erhalten`);
-  const meta = { when: new Date().toISOString().slice(0, 16).replace('T', ' '), gesamt: bewertet.length, neu: neu.length, fehler };
+  const jetzt = new Date();
+  const meta = { when: jetzt.toISOString().slice(0, 16).replace('T', ' '), zeit: jetzt.toISOString(), gesamt: bewertet.length, neu: neu.length, fehler };
 
   // Verlauf: Scan in den Speicher übernehmen (im Speicher, geschrieben wird erst unten) und mit dem vorigen vergleichen.
   // Nur Quellen, die vollständig geantwortet haben, können Funde „verlieren“.
   const alleNamen = o.dryRun || !o.quellen ? Object.values(QUELLEN).map((q) => q.name) : o.quellen.map((k) => QUELLEN[k].name);
   const quellenOk = alleNamen.filter((n) => !ausgefallen.includes(n) && !fehler.some((f) => f.startsWith(n)));
-  const jetzt = new Date();
   const topIds = verteile(bewertet, cfg.maxProOrt ?? 3).slice(0, 10).map((t) => t.id);
   let neuerSpeicher = uebernimm(speicher, bewertet, { quellen: quellenOk, topIds, jetzt, cfg });
   const verlauf = auswerten(neuerSpeicher, { cfg });
@@ -152,9 +168,14 @@ async function scan(o, cfg) {
   if (o.html) await writeFile(o.html, toHtml(top, meta, verlauf));
   if (o.md) await writeFile(o.md, toMarkdown(top, meta));
   if (o.json) await writeFile(o.json, JSON.stringify({ meta, treffer: bewertet }, null, 1));
-  console.log(toConsole(top, meta));
-  console.log('\n' + verlaufText(verlauf));
-  if (o.html) console.log(`HTML: ${path.resolve(o.html)}`);
+  if (fuerDigest) {
+    log(`Scan für den Digest: ${bewertet.length} gefunden${fehler.length ? `, ${fehler.length} Fehler` : ''}`);
+    for (const f of fehler) log(f);
+  } else {
+    console.log(toConsole(top, meta));
+    console.log('\n' + verlaufText(verlauf));
+    if (o.html) console.log(`HTML: ${path.resolve(o.html)}`);
+  }
 
   // Ein Trockenlauf schreibt keinen Zustand; bei einer komplett ausgefallenen Quelle bleibt der letzte Scan stehen.
   if (!o.dryRun && !ausgefallen.length) {
@@ -162,7 +183,7 @@ async function scan(o, cfg) {
     await writeFile(LETZTER, JSON.stringify({ meta, treffer: bewertet }, null, 1));
     // gezeigt = was ausgegeben wurde; wieder aufgetauchte, schon gezeigte Funde bekommen einen frischen Zeitstempel.
     const iso = jetzt.toISOString();
-    const gezeigt = new Set(top.map((t) => t.id));
+    const gezeigt = new Set(fuerDigest ? [] : top.map((t) => t.id));
     const funde = { ...neuerSpeicher.funde };
     for (const t of bewertet) if (funde[t.id] && (gezeigt.has(t.id) || funde[t.id].gezeigt)) funde[t.id] = { ...funde[t.id], gezeigt: iso };
     neuerSpeicher = vergesseAlteFunde({ ...neuerSpeicher, funde }, 120, jetzt.getTime());
@@ -171,13 +192,64 @@ async function scan(o, cfg) {
   return fehler.length ? 2 : 0;
 }
 
-async function letzter() {
+async function letzter(pfad = LETZTER) {
   try {
-    return JSON.parse(await readFile(LETZTER, 'utf8'));
+    return JSON.parse(await readFile(pfad, 'utf8'));
   } catch (e) {
     if (e.code === 'ENOENT') throw new Error('Noch kein Scan vorhanden – zuerst `ungeloest scan`.');
     throw e;
   }
+}
+
+async function ladeMerkliste(pfad) {
+  try {
+    return hebeMerklisteAn(JSON.parse(await readFile(pfad, 'utf8')));
+  } catch (e) {
+    if (e.code === 'ENOENT') return leereMerkliste();
+    throw new Error(`Digest-Merkliste ${pfad} defekt: ${e.message}`);
+  }
+}
+
+// Zeitpunkt des gespeicherten Scans: neues Feld meta.zeit, sonst meta.when ("JJJJ-MM-TT HH:MM", UTC) älterer Scans.
+export function scanZeitAus(meta = {}) {
+  if (typeof meta.zeit === 'string' && Number.isFinite(Date.parse(meta.zeit))) return meta.zeit;
+  const m = /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})$/.exec(String(meta.when || ''));
+  const ms = m ? Date.parse(`${m[1]}T${m[2]}:00Z`) : NaN;
+  return Number.isFinite(ms) ? new Date(ms).toISOString() : null;
+}
+
+/**
+ * `digest`: liest den letzten gespeicherten Scan und fragt das Netz nicht ab; nur --frisch scannt vorher.
+ * Abhängigkeiten sind injizierbar (Tests): scanne, jetzt, ordner, aus.
+ */
+export async function digestBefehl(o, cfg, { scanne = scan, jetzt = new Date(), ordner = DATEN, aus = (s) => process.stdout.write(s + '\n') } = {}) {
+  const hinweise = [];
+  let code = 0;
+  if (o.frisch) {
+    code = await scanne({ ...o, html: null, md: null, json: null, top: null, alle: false, dryRun: false }, cfg, { fuerDigest: true });
+    if (code) hinweise.push('Der frische Scan meldete Fehler (siehe Fehlerausgabe). Der Digest zeigt den letzten vollständig gespeicherten Stand.');
+  }
+  const daten = await letzter(path.join(ordner, 'letzter-scan.json'));
+  const treffer = Array.isArray(daten.treffer) ? daten.treffer : [];
+  const scanZeit = scanZeitAus(daten.meta);
+  // „Außerdem neu“: was der Speicher im letzten Scan zum ersten Mal sah. Beim allerersten Scan ist alles neu (null).
+  const speicher = await ladeSpeicher(path.join(ordner, 'gesehen.json'));
+  const letzterScan = speicher.scans[speicher.scans.length - 1];
+  const neuIds = speicher.scans.length > 1
+    ? new Set(Object.entries(speicher.funde).filter(([, f]) => f.erstmals === letzterScan.zeit).map(([id]) => id))
+    : null;
+  const merkPfad = path.join(ordner, MERKLISTE);
+  const merkliste = await ladeMerkliste(merkPfad);
+  const digest = baueDigest(treffer, { merkliste, cfg, scanZeit, neuIds, jetzt, gesamt: treffer.length, hinweise });
+
+  if (o.md) await writeFile(o.md, digestMarkdown(digest));
+  if (o.html) await writeFile(o.html, digestHtml(digest));
+  if (o.json) await writeFile(o.json, JSON.stringify(digest, null, 1) + '\n');
+  aus(o.jsonFlag ? JSON.stringify(digest, null, 1) : digestText(digest));
+
+  // Erst zeigen, dann merken. Ein leerer Digest verbraucht keinen Platz im Sperrfenster.
+  if (!o.dryRun && digest.chancen.length) await schreibeAtomar(merkPfad, JSON.stringify(merke(merkliste, digest, { cfg }), null, 1));
+  return code;
 }
 
 export function finde(daten, id) {
@@ -196,6 +268,7 @@ async function main() {
   if (o.befehl === 'help') { process.stdout.write(HILFE); return 0; }
   const cfg = await ladeConfig(o.config || undefined);
   if (o.befehl === 'scan') return scan(o, cfg);
+  if (o.befehl === 'digest') return digestBefehl(o, cfg);
   if (o.befehl === 'verlauf') {
     const a = auswerten(await ladeSpeicher(GESEHEN), { cfg });
     console.log(o.jsonFlag ? JSON.stringify(a, null, 1) : verlaufText(a));
