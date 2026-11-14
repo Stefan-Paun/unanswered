@@ -211,7 +211,8 @@ async function ladeMerkliste(pfad) {
 }
 
 // Zeitpunkt des gespeicherten Scans: neues Feld meta.zeit, sonst meta.when ("JJJJ-MM-TT HH:MM", UTC) älterer Scans.
-export function scanZeitAus(meta = {}) {
+export function scanZeitAus(meta) {
+  if (!meta || typeof meta !== 'object') return null;
   if (typeof meta.zeit === 'string' && Number.isFinite(Date.parse(meta.zeit))) return meta.zeit;
   const m = /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})$/.exec(String(meta.when || ''));
   const ms = m ? Date.parse(`${m[1]}T${m[2]}:00Z`) : NaN;
@@ -230,13 +231,14 @@ export async function digestBefehl(o, cfg, { scanne = scan, jetzt = new Date(), 
     if (code) hinweise.push('Der frische Scan meldete Fehler (siehe Fehlerausgabe). Der Digest zeigt den letzten vollständig gespeicherten Stand.');
   }
   const daten = await letzter(path.join(ordner, 'letzter-scan.json'));
-  const treffer = Array.isArray(daten.treffer) ? daten.treffer : [];
+  if (!daten || typeof daten !== 'object' || !Array.isArray(daten.treffer)) throw new Error('Letzter Scan ist nicht lesbar (keine Trefferliste) – mit `ungeloest scan` oder `digest --frisch` neu anlegen.');
+  const treffer = daten.treffer;
   const scanZeit = scanZeitAus(daten.meta);
   // „Außerdem neu“: was der Speicher im letzten Scan zum ersten Mal sah. Beim allerersten Scan ist alles neu (null).
   const speicher = await ladeSpeicher(path.join(ordner, 'gesehen.json'));
   const letzterScan = speicher.scans[speicher.scans.length - 1];
   const neuIds = speicher.scans.length > 1
-    ? new Set(Object.entries(speicher.funde).filter(([, f]) => f.erstmals === letzterScan.zeit).map(([id]) => id))
+    ? new Set(Object.entries(speicher.funde).filter(([, f]) => f?.erstmals === letzterScan?.zeit).map(([id]) => id))
     : null;
   const merkPfad = path.join(ordner, MERKLISTE);
   const merkliste = await ladeMerkliste(merkPfad);
@@ -247,8 +249,9 @@ export async function digestBefehl(o, cfg, { scanne = scan, jetzt = new Date(), 
   if (o.json) await writeFile(o.json, JSON.stringify(digest, null, 1) + '\n');
   aus(o.jsonFlag ? JSON.stringify(digest, null, 1) : digestText(digest));
 
-  // Erst zeigen, dann merken. Ein leerer Digest verbraucht keinen Platz im Sperrfenster.
-  if (!o.dryRun && digest.chancen.length) await schreibeAtomar(merkPfad, JSON.stringify(merke(merkliste, digest, { cfg }), null, 1));
+  // Erst zeigen, dann merken. Auch ein leerer Digest zählt, sonst rückt das Sperrfenster nie weiter und es bliebe für immer leer.
+  // Ohne lesbare Scan-Zeit wird nichts gemerkt: sonst zeigte jeder weitere Aufruf zum selben Stand etwas anderes.
+  if (!o.dryRun && digest.scan.zeit) await schreibeAtomar(merkPfad, JSON.stringify(merke(merkliste, digest, { cfg }), null, 1));
   return code;
 }
 

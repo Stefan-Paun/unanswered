@@ -144,7 +144,7 @@ IDs sehen so aus: `gh:owner/repo#123`, `gd:owner/repo#45` (Discussion), `gl:grup
 ## Entwickeln
 
 ```sh
-node --test test/*.test.mjs      # 128 Tests, laufen ohne Netz (Fixtures in test/fixtures)
+node --test test/*.test.mjs      # 137 Tests, laufen ohne Netz (Fixtures in test/fixtures)
 ```
 
 Module: `lib/sources/{github,stackoverflow,discourse,github-discussions,gitlab}.mjs` (je eine reine `parse*`-Funktion plus `suche*` mit injizierbarem `fetch`), `lib/abruf.mjs` (gemeinsamer Abruf mit Zeitlimit, Wiederholung, Ratenlimit, Token-Schwärzung), `lib/normalize.mjs`, `lib/score.mjs`, `lib/store.mjs`, `lib/verlauf-speicher.mjs` (Speicher v2), `lib/verlauf.mjs` (Auswertung), `lib/report/{summary,html,markdown,verlauf,digest}.mjs`, `lib/dossier.mjs`, `lib/digest.mjs` (Auswahl, Begründung, Aufwand, Merkliste; rein).

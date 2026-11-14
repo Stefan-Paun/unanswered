@@ -174,7 +174,8 @@ test('scanStand: frisch, veraltet, unbekannt', () => {
   assert.equal(scanStand('2026-11-09T05:00:00.000Z', JETZT).veraltet, true);
   assert.deepEqual(scanStand(null, JETZT), { zeit: null, alterStunden: null, veraltet: true });
   assert.deepEqual(scanStand('kein Datum', JETZT), { zeit: null, alterStunden: null, veraltet: true });
-  assert.equal(scanStand('2026-11-11T06:00:00.000Z', JETZT).alterStunden, 0, 'Scan aus der Zukunft zählt als frisch');
+  assert.equal(scanStand('2026-11-10T06:30:00.000Z', JETZT).alterStunden, 0, 'kleine Uhrabweichung zählt als frisch');
+  assert.deepEqual(scanStand('2026-11-11T06:00:00.000Z', JETZT), { zeit: null, alterStunden: null, veraltet: true }, 'Scan aus der Zukunft gilt nicht als frisch');
   assert.equal(alterText(0.5), 'unter einer Stunde alt');
   assert.equal(alterText(1), '1 Stunde alt');
   assert.equal(alterText(30), '30 Stunden alt');
@@ -202,4 +203,45 @@ test('baueDigest: Fremdtext ohne Steuerzeichen, Adressen nur https, außerdem ne
   assert.ok(!/[\x00-\x1f\x7f]/.test(JSON.stringify(d).replace(/\\n/g, '')));
   assert.equal(baueDigest(liste, { jetzt: JETZT, scanZeit: SCAN }).ausserdemNeu.length, 5, 'ohne Wissen über Neues: die nächsten fünf');
   assert.throws(() => baueDigest(liste, {}), /jetzt/);
+});
+
+test('waehle: doppelte IDs mit verschiedenen Werten – der beste zählt, egal in welcher Reihenfolge', () => {
+  const liste = [fund('gh:a/a#1', 10), fund('gh:b/b#1', 50), fund('gh:a/a#1', 90)];
+  assert.deepEqual(ids(waehle(liste)), ['gh:a/a#1', 'gh:b/b#1']);
+  assert.deepEqual(ids(waehle([...liste].reverse())), ['gh:a/a#1', 'gh:b/b#1']);
+  assert.equal(waehle(liste).chancen[0].t.gesamt, 90);
+});
+
+test('Begründung bei „wieder dabei“ nennt die Schwelle, die wirklich überschritten wurde', () => {
+  const d1 = baueDigest([fund('gh:a/a#1', 60)], { jetzt: JETZT, scanZeit: '2026-11-09T05:30:00.000Z' });
+  const d2 = baueDigest([fund('gh:a/a#1', 75, { kommentare: 1 })], { merkliste: merke(leereMerkliste(), d1), jetzt: JETZT, scanZeit: SCAN });
+  assert.match(d2.chancen[0].warum, /^seit dem letzten Digest deutlich höher bewertet \(\+15\)/);
+});
+
+test('Kaputte gespeicherte Treffer brechen nichts und erzeugen keinen Unsinn', () => {
+  const schief = fund('gh:a/a#1', 70, { labels: 'bug', tags: null, kommentare: '5', antworten: null, alterTage: 'alt', sprache: { x: 1 },
+    titel: { y: 2 }, ort: 7, wirkungRoh: 'nix', text: null, url: ['https://example.org'] });
+  const d = baueDigest([schief, 'text', 5, { id: '', gesamt: 1 }, { id: 'gh:b/b#1', gesamt: NaN }], { jetzt: JETZT, scanZeit: SCAN });
+  assert.equal(d.chancen.length, 1);
+  const c = d.chancen[0];
+  assert.deepEqual([c.titel, c.ort, c.url, c.sprache, c.alterTage, c.aktivitaet], ['', '7', null, null, null, 0]);
+  assert.ok(!/NaN|object Object|undefined/.test(JSON.stringify(d)));
+  assert.equal(baueDigest(null, { jetzt: JETZT, scanZeit: SCAN }).chancen.length, 0);
+});
+
+test('Adressen und Titel: keine Steuerzeichen, kein Bidi, keine unsichtbaren Zeichen', () => {
+  const liste = [
+    fund('gh:a/a#1', 90, { url: 'https://example.org/\x1b]0;x\x07\x1b[2J', titel: 'Vor\u202Eher\u200B und nach' }),
+    fund('gh:b/b#1', 80, { url: 'https://example.org/\u202Eabc' }),
+    fund('gh:c/c#1', 70, { url: 'https://example.org/gut?a=1&b=2#x' }),
+  ];
+  const d = baueDigest(liste, { jetzt: JETZT, scanZeit: SCAN });
+  assert.deepEqual(d.chancen.map((c) => c.url), [null, null, 'https://example.org/gut?a=1&b=2#x']);
+  assert.equal(d.chancen[0].titel, 'Vorher und nach');
+});
+
+test('konfig: unsinnige Schwellen fallen auf den Standard zurück', () => {
+  const k = konfig({ digest: { bewegtAktivitaet: 0, bewegtBewertung: -3, veraltetStunden: 'abc', anzahl: 0, interessen: { maxBonus: 'x', bonusSprache: 7 } } });
+  assert.deepEqual([k.bewegtAktivitaet, k.bewegtBewertung, k.veraltetStunden, k.anzahl], [3, 10, 24, 3]);
+  assert.deepEqual([k.interessen.maxBonus, k.interessen.bonusSprache], [20, 7]);
 });

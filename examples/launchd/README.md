@@ -42,6 +42,8 @@ rm ~/Library/LaunchAgents/com.example.ungeloest.digest.plist
 
 ## Gut zu wissen
 
+- `digest.md` und `digest.html` werden jeden Morgen überschrieben. `digest.txt` und `digest.log` schreibt launchd selbst und
+  hängt dabei an: Dort steht der neueste Digest unten, ab und zu von Hand leeren.
 - War der Rechner um 7:00 im Ruhezustand, holt launchd den Lauf beim Aufwachen nach.
 - `--frisch` macht vor dem Digest einen Scan (Netzanfragen an die eingestellten Quellen). Ohne `--frisch`
   liest der Digest nur den letzten gespeicherten Scan und sagt dazu, wenn der älter als ein Tag ist.

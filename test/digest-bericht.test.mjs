@@ -131,3 +131,10 @@ test('Leerer Digest und Hinweise in jedem Format', () => {
   assert.match(html, /<p class="hinweis">Hinweis: github: &lt;b&gt;abgebrochen&lt;\/b&gt;<\/p>/);
   assert.match(html, /<p class="leer">Heute nichts Neues/);
 });
+
+test('Unbekannte Quelle wird zu ??, auch bei Namen wie constructor', () => {
+  const d = baueDigest([fund('gh:a/a#1', 90, { quelle: 'constructor' }), fund('gh:b/b#1', 80, { quelle: '__proto__' })], { jetzt: JETZT, scanZeit: SCAN });
+  const alles = digestText(d, { farben: false }) + digestMarkdown(d) + digestHtml(d);
+  assert.ok(!/native code|object Object/.test(alles));
+  assert.match(digestText(d, { farben: false }), /\n {3}\?\? a\/a · /);
+});

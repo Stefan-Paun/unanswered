@@ -215,14 +215,18 @@ test('digest: „Außerdem neu“ nimmt nur, was der Speicher im letzten Scan er
       scans: [{ zeit: frueher, quellen: ['github'], anzahl: 4 }, { zeit, quellen: ['github'], anzahl: 5 }],
       funde: { 'gh:acme/widget#13': fundSeit(frueher), 'gl:gruppe/projekt#7': fundSeit(zeit), 'gh:acme/widget#12': fundSeit(zeit) } }));
     const cfg = path.join(dir, 'cfg.json');
-    await writeFile(cfg, JSON.stringify({ digest: { anzahl: 2, interessen: { schlagwoerter: ['import'] } } }));
+    await writeFile(cfg, JSON.stringify({ digest: { anzahl: 1, interessen: { schlagwoerter: ['import'] } } }));
+    const ohne = JSON.parse((await lauf(['digest', '--json', '--dry-run'])).stdout);
+    assert.equal(ohne.chancen[0].id, 'gh:acme/widget#12');
+    assert.deepEqual(ohne.ausserdemNeu.map((t) => t.id), ['gl:gruppe/projekt#7'], 'nur der im letzten Scan erstmals gesehene Fund; #13 ist älter, die übrigen kennt der Speicher nicht');
+    // Mit Interessenliste: Schlagwort „import“ (+5) hebt den GitLab-Fund nicht über den Besten, aber es steht in seiner Begründung, sobald er dran ist.
+    const eigene = { digest: { anzahl: 5, interessen: { schlagwoerter: ['import'] } } };
+    await writeFile(cfg, JSON.stringify(eigene));
     const d = JSON.parse((await lauf(['digest', '--json', '--dry-run', '--config', cfg])).stdout);
-    assert.equal(d.chancen.length, 2);
     const gl = d.chancen.find((c) => c.id === 'gl:gruppe/projekt#7');
-    if (gl) assert.match(gl.warum, /passt zu deinen Interessen \(import\)/);
-    const neu = d.ausserdemNeu.map((t) => t.id);
-    assert.ok(!neu.includes('gh:acme/widget#13'), 'schon länger bekannt, also nicht „neu“');
-    for (const id of neu) assert.ok(['gl:gruppe/projekt#7', 'gh:acme/widget#12'].includes(id));
+    assert.ok(gl, 'bei fünf Plätzen ist der GitLab-Fund dabei');
+    assert.match(gl.warum, /passt zu deinen Interessen \(import\)$/);
+    assert.deepEqual(d.ausserdemNeu, [], 'der einzige neue Fund ist jetzt selbst eine Chance');
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
@@ -234,4 +238,73 @@ test('scanZeitAus: neues Feld, altes Format, Unsinn', () => {
   assert.equal(scanZeitAus({ when: 'gestern' }), null);
   assert.equal(scanZeitAus({ zeit: 'quatsch' }), null);
   assert.equal(scanZeitAus(), null);
+});
+
+test('digest: ist alles gesperrt, wird auch der leere Digest gemerkt, damit das Fenster weiterrückt', async () => {
+  const { dir, daten, lauf } = await ordnerMit(vorTagen(0.9));
+  try {
+    const cfg = path.join(dir, 'cfg.json');
+    await writeFile(cfg, JSON.stringify({ digest: { anzahl: 5, sperreDigests: 2 } }));
+    const mit = async (tage) => {
+      await writeFile(path.join(daten, 'letzter-scan.json'), JSON.stringify(scanDaten(vorTagen(tage))));
+      return JSON.parse((await lauf(['digest', '--json', '--config', cfg])).stdout).chancen.length;
+    };
+    assert.equal(await mit(0.8), 4, 'vier Orte, also vier Chancen');
+    assert.equal(await mit(0.6), 1, 'nur das zweite Issue des schon gezeigten Repos ist noch frei');
+    assert.equal(await mit(0.4), 0);
+    assert.equal(JSON.parse(await readFile(path.join(daten, 'digest.json'), 'utf8')).digests.length, 3);
+    assert.equal(await mit(0.2), 4, 'der erste Digest ist aus dem Fenster gefallen');
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('digest: kaputter oder zeitloser Scan – klare Meldung, keine Merkliste ohne Scan-Zeit', async () => {
+  const { dir, daten, lauf } = await ordnerMit();
+  try {
+    const pfad = path.join(daten, 'letzter-scan.json');
+    await writeFile(pfad, 'null');
+    await assert.rejects(lauf(['digest']), /Letzter Scan ist nicht lesbar/);
+    await writeFile(pfad, JSON.stringify({ meta: null, treffer: scanDaten(vorTagen(0)).treffer }));
+    const a = await lauf(['digest', '--json']);
+    const b = await lauf(['digest', '--json']);
+    assert.equal(JSON.parse(a.stdout).scan.zeit, null);
+    assert.deepEqual(JSON.parse(b.stdout).chancen, JSON.parse(a.stdout).chancen, 'gleicher Stand, gleiche Auswahl');
+    await assert.rejects(access(path.join(daten, 'digest.json')));
+    await writeFile(path.join(daten, 'gesehen.json'), JSON.stringify({ version: 2, scans: [{ zeit: 'a' }, { zeit: 'b' }], funde: { x: null } }));
+    assert.equal(JSON.parse((await lauf(['digest', '--json'])).stdout).chancen.length, 3);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test('digest --frisch mit Antwort aus der Fixture: Scan wird gespeichert, aber nichts als gezeigt gemerkt', async () => {
+  const { dir, daten } = await ordnerMit(null);
+  try {
+    const fixture = new URL('./fixtures/discourse-search.json', import.meta.url).pathname;
+    const vorspann = path.join(dir, 'fixture-netz.mjs');
+    await writeFile(vorspann, `import fs from 'node:fs';
+globalThis.fetch = async (url) => {
+  if (!String(url).startsWith('https://discuss.python.org/')) throw new TypeError('fetch failed (Test ohne Netz)');
+  return new Response(fs.readFileSync(${JSON.stringify(fixture)}), { status: 200, headers: { 'content-type': 'application/json' } });
+};
+`);
+    const cfg = path.join(dir, 'cfg.json');
+    await writeFile(cfg, JSON.stringify({ alterTage: { min: 0, max: 1000000 }, discourse: { foren: [{ host: 'discuss.python.org', sprache: 'python', gewicht: 60 }] } }));
+    const { stdout, stderr } = await exec(process.execPath, ['--import', vorspann, BIN, 'digest', '--frisch', '--quellen', 'dc', '--config', cfg, '--json'],
+      { env: { ...process.env, UNGELOEST_DATEN: daten, GITHUB_TOKEN: '' } });
+    const d = JSON.parse(stdout);
+    assert.equal(d.chancen.length, 1, 'ein Forum ist ein Ort, also eine Chance');
+    assert.equal(d.scan.veraltet, false);
+    assert.deepEqual(d.hinweise, []);
+    assert.match(stderr, /Scan für den Digest: \d+ gefunden\n/);
+    assert.ok(!stderr.includes('Top '), 'die Scan-Liste wird nicht ausgegeben');
+    const speicher = JSON.parse(await readFile(path.join(daten, 'gesehen.json'), 'utf8'));
+    const funde = Object.values(speicher.funde);
+    assert.ok(funde.length >= 1);
+    assert.ok(funde.every((f) => f.gezeigt === null), 'ein späterer `scan` zeigt diese Funde noch als neu');
+    assert.equal(JSON.parse(await readFile(path.join(daten, 'letzter-scan.json'), 'utf8')).meta.zeit, d.scan.zeit);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });
