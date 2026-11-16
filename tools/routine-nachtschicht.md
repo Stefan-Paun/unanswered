@@ -1,7 +1,7 @@
 # Entwurf: Cloud-Routine „Ungelöst-Morgenliste“ (noch NICHT angelegt)
 
 Idee: Eine Routine wie die anderen Nachtschichten läuft täglich um 06:30 (Europe/Vienna) auf dem Repo
-Stefan-Paun/ungeloest (sobald es öffentlich ist), führt `node bin/ungeloest.mjs scan --md morgen.md` aus
+Stefan-Paun/unanswered (sobald es öffentlich ist), führt `node bin/ungeloest.mjs scan --md morgen.md` aus
 und schickt die Top 10 als PushNotification. Sie postet nichts, öffnet keinen PR, ändert nichts im Repo.
 
 Prompt-Entwurf:
