@@ -12,6 +12,7 @@ Jeden Tag bleiben tausende Bug-Reports und Fragen unbeantwortet: GitHub-Issues o
 git clone https://github.com/Stefan-Paun/ungeloest && cd ungeloest
 node bin/ungeloest.mjs scan --html bericht.html     # echter Scan (braucht Node 20+)
 node bin/ungeloest.mjs dossier so:80005138           # Steckbrief zu einem Treffer
+node bin/ungeloest.mjs digest                        # die drei besten Chancen aus dem letzten Scan, ohne Netz
 node bin/ungeloest.mjs scan --dry-run --alle         # ohne Netz, mit Beispieldaten; zeigt auch, was abgefragt würde
 ```
 
@@ -65,11 +66,57 @@ Dazu eine Trefferliste: wie viele Funde, die einmal in den Top 10 waren, andere 
 
 Grenze: Die Suchen liefern nur noch Offenes. „Sicher gelöst“ entsteht daher nur, wenn ein Fund mit Antworten, Kommentaren oder Zustand `geschlossen` wieder auftaucht; ein aktives Nachfragen je Fund gibt es nicht.
 
+## Morgen-Digest
+
+`ungeloest digest` zeigt statt der ganzen Liste die **drei lohnendsten Funde** des letzten gespeicherten Scans, je mit einem Satz „warum diese“ und einer Aufwandsklasse. Der Befehl fragt das Netz nicht ab; nur `--frisch` macht vorher einen Scan. Ist der letzte Scan älter als ein Tag, steht das als „Achtung“ in jeder Ausgabe.
+
+```sh
+node bin/ungeloest.mjs digest                                   # Text im Terminal (Farbe nur am Terminal und ohne NO_COLOR)
+node bin/ungeloest.mjs digest --md digest.md --html digest.html # zusätzlich Markdown und eine HTML-Karte (hell/dunkel, ohne Script)
+node bin/ungeloest.mjs digest --json                            # JSON auf stdout; --json pfad schreibt in eine Datei
+node bin/ungeloest.mjs digest --frisch                          # erst scannen, dann Digest (Scan-Meldungen auf stderr)
+```
+
+**Auswahl.** Rang = Gesamtwert plus Bonus aus der Interessenliste; bei Gleichstand entscheiden Gesamtwert, Wirkung und zuletzt die ID, sodass derselbe Stand immer dieselbe Auswahl ergibt. Dazu zwei Regeln:
+
+- *Streuung:* höchstens ein Fund je Repo oder Forum; Stack Overflow zählt als ein Ort. Gibt es weniger als drei Orte, zeigt der Digest weniger als drei Chancen.
+- *Wiederholungssperre:* Was in den letzten 5 Digests stand, kommt nicht wieder, außer es hat sich deutlich bewegt (Bewertung +10 oder Stimmen + Kommentare +3); dann steht „wieder dabei“ daneben. Ein zweiter Aufruf zum selben Scan zeigt dasselbe wie der erste.
+
+Unter „Außerdem neu“ stehen bis zu fünf weitere Titel, die im letzten Scan zum ersten Mal auftauchten und noch in keinem Digest standen.
+
+**Warum diese.** Der Satz entsteht ohne KI aus Merkmalen des Fundes: Alter („12 Tage ohne Antwort“), Stimmen, erkannte Fehlermeldung, Code oder Stacktrace, Reichweite (ab 1 000 Sternen, ab 500 Aufrufen bei Stack Overflow, Forum mit Gewicht ≥ 50), Einstiegs-Label, Treffer in der Interessenliste oder Sprache im Fokus. Text aus der Frage selbst kommt darin nie vor.
+
+**Aufwand** (grobe Faustregel, Start bei 1 Punkt):
+
+| Merkmal | Punkte |
+|---|---:|
+| Frage unter 600 Zeichen / unter 2 500 / länger | +0 / +1 / +2 |
+| Code oder Stacktrace enthalten | −1 |
+| Reproduktion beschrieben (Schritte, erwartet/tatsächlich, Minimalbeispiel) | −1 |
+| weder Code noch Fehlermeldung | +1 |
+
+Summe ≤ 0 → **kurz**, 1–2 → **mittel**, ab 3 → **lang**.
+
+**Interessenliste und Schwellen** in der Config unter `digest`:
+
+```json
+"digest": {
+  "anzahl": 3,
+  "sperreDigests": 5,
+  "interessen": { "schlagwoerter": ["asyncio", "vite"], "sprachen": ["python"] }
+}
+```
+
+Eine passende Sprache gibt +10, jedes Schlagwort in Titel, Tags, Labels oder Ort +5, zusammen höchstens +20. Weitere Schalter: `bewegtBewertung`, `bewegtAktivitaet`, `ausserdemNeu`, `maxMerkliste`, `veraltetStunden`.
+
+Die Merkliste der gezeigten Funde liegt in `data/digest.json` (höchstens 30 Digests); `--dry-run` schreibt sie nicht fort. Fremde Titel sind in jedem Format maskiert, verlinkt wird nur `https:`. Der Digest sendet nichts und benachrichtigt niemanden.
+
 ## Befehle
 
 ```
 scan [--quellen gh,so,dc,gd,gl] [--top n] [--alle] [--html p] [--md p] [--json p] [--dry-run]
 verlauf [--json]  Veränderungen aus dem Speicher (kein Scan, schreibt nichts)
+digest [--frisch] [--md p] [--html p] [--json [p]] [--dry-run]   die drei besten Chancen des letzten Scans
 list              alle Treffer des letzten Scans
 show <id>         Steckbrief in der Konsole
 dossier <id>      Steckbrief nach dossiers/<id>.md schreiben
@@ -79,7 +126,7 @@ IDs sehen so aus: `gh:owner/repo#123`, `gd:owner/repo#45` (Discussion), `gl:grup
 
 ## Config
 
-`ungeloest.config.json`: Sprachen, Alter, GitHub-Labels und Mindest-Sterne, Stack-Overflow-Tags, Foren mit Gewicht, `githubDiscussions` und `gitlab` (siehe Quellen), Ausschluss-Muster für Titel (Ankündigungen, PEPs, Review-Requests) und Repos.
+`ungeloest.config.json`: Sprachen, Alter, GitHub-Labels und Mindest-Sterne, Stack-Overflow-Tags, Foren mit Gewicht, `githubDiscussions` und `gitlab` (siehe Quellen), Ausschluss-Muster für Titel (Ankündigungen, PEPs, Review-Requests) und Repos, `digest` (siehe Morgen-Digest).
 
 ## Ablauf, der funktioniert
 
@@ -90,14 +137,16 @@ IDs sehen so aus: `gh:owner/repo#123`, `gd:owner/repo#45` (Discussion), `gl:grup
 
 ## Jeden Morgen automatisch
 
-`tools/at.stefanpaun.ungeloest.plist` ist ein launchd-Job, der um 07:10 `tools/morgen.sh` startet (HTML + Markdown nach `data/`, Benachrichtigung, wenn `terminal-notifier` installiert ist). Einschalten musst du selbst, die Schritte stehen in der Datei. `tools/routine-nachtschicht.md` skizziert die Cloud-Variante für später.
+`examples/launchd/` enthält eine Vorlage für macOS: eine Beispiel-plist mit Platzhaltern statt echter Pfade, die um 7:00 `digest --frisch` startet und Text, Markdown und HTML in einen Ordner schreibt, dazu eine kurze Anleitung zum Ein- und Ausschalten. `ungeloest` lädt und kopiert die Datei nie selbst.
+
+Älter und auf die ganze Liste statt den Digest ausgelegt: `tools/at.stefanpaun.ungeloest.plist` ist ein launchd-Job, der um 07:10 `tools/morgen.sh` startet (HTML + Markdown nach `data/`, Benachrichtigung, wenn `terminal-notifier` installiert ist). Einschalten musst du selbst, die Schritte stehen in der Datei. `tools/routine-nachtschicht.md` skizziert die Cloud-Variante für später.
 
 ## Entwickeln
 
 ```sh
-node --test test/*.test.mjs      # 98 Tests, laufen ohne Netz (Fixtures in test/fixtures)
+node --test test/*.test.mjs      # 137 Tests, laufen ohne Netz (Fixtures in test/fixtures)
 ```
 
-Module: `lib/sources/{github,stackoverflow,discourse,github-discussions,gitlab}.mjs` (je eine reine `parse*`-Funktion plus `suche*` mit injizierbarem `fetch`), `lib/abruf.mjs` (gemeinsamer Abruf mit Zeitlimit, Wiederholung, Ratenlimit, Token-Schwärzung), `lib/normalize.mjs`, `lib/score.mjs`, `lib/store.mjs`, `lib/verlauf-speicher.mjs` (Speicher v2), `lib/verlauf.mjs` (Auswertung), `lib/report/{summary,html,markdown,verlauf}.mjs`, `lib/dossier.mjs`.
+Module: `lib/sources/{github,stackoverflow,discourse,github-discussions,gitlab}.mjs` (je eine reine `parse*`-Funktion plus `suche*` mit injizierbarem `fetch`), `lib/abruf.mjs` (gemeinsamer Abruf mit Zeitlimit, Wiederholung, Ratenlimit, Token-Schwärzung), `lib/normalize.mjs`, `lib/score.mjs`, `lib/store.mjs`, `lib/verlauf-speicher.mjs` (Speicher v2), `lib/verlauf.mjs` (Auswertung), `lib/report/{summary,html,markdown,verlauf,digest}.mjs`, `lib/dossier.mjs`, `lib/digest.mjs` (Auswahl, Begründung, Aufwand, Merkliste; rein).
 
 MIT

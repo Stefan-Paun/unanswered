@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Vorlage: jeden Morgen um 7:00 einen frischen Scan machen und den Digest in Dateien schreiben.
+       Vor dem Benutzen alle Platzhalter (PFAD_ZU_…) durch echte, absolute Pfade ersetzen.
+       Diese Datei wird von ungeloest nie geladen oder kopiert; die Schritte stehen in README.md daneben. -->
+  <key>Label</key>
+  <string>com.example.ungeloest.digest</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>PFAD_ZU_NODE</string>
+    <string>PFAD_ZU_UNGELOEST/bin/ungeloest.mjs</string>
+    <string>digest</string>
+    <string>--frisch</string>
+    <string>--md</string>
+    <string>PFAD_ZU_AUSGABE/digest.md</string>
+    <string>--html</string>
+    <string>PFAD_ZU_AUSGABE/digest.html</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>PFAD_ZU_UNGELOEST</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>NO_COLOR</key>
+    <string>1</string>
+  </dict>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>7</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>PFAD_ZU_AUSGABE/digest.txt</string>
+  <key>StandardErrorPath</key>
+  <string>PFAD_ZU_AUSGABE/digest.log</string>
+  <key>RunAtLoad</key>
+  <false/>
+</dict>
+</plist>
