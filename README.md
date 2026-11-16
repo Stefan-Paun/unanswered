@@ -9,7 +9,7 @@ Jeden Tag bleiben tausende Bug-Reports und Fragen unbeantwortet: GitHub-Issues o
 ## Schnellstart
 
 ```sh
-git clone https://github.com/Stefan-Paun/ungeloest && cd ungeloest
+git clone https://github.com/Stefan-Paun/unanswered && cd ungeloest
 node bin/ungeloest.mjs scan --html bericht.html     # echter Scan (braucht Node 20+)
 node bin/ungeloest.mjs dossier so:80005138           # Steckbrief zu einem Treffer
 node bin/ungeloest.mjs digest                        # die drei besten Chancen aus dem letzten Scan, ohne Netz
